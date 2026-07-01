@@ -16,7 +16,7 @@ export default function MobileMenu({ onClose, onOpenCalc, country, setCountry })
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
           <span className="bg-black rounded-lg px-2 py-1 inline-flex">
-            <img src="/logo.png" alt="AUTO VG" className="h-7 w-auto" />
+            <img src="/logo.png" alt="AUTO VG" className="h-9 w-auto" />
           </span>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full btn-ghost p-0" style={{ color: 'var(--text-1)' }}>
             <X className="w-4 h-4" />

@@ -4,7 +4,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         <div>
           <span className="bg-black rounded-lg px-2 py-1 inline-flex">
-            <img src="/logo.png" alt="AUTO VG" className="h-9 w-auto" />
+            <img src="/logo.png" alt="AUTO VG" className="h-14 w-auto" />
           </span>
           <p className="text-sm mt-4" style={{ color: 'var(--text-2)' }}>
             📍 Magj, Prishtinë 10000, Kosovë

@@ -183,7 +183,7 @@ export default function Home() {
           background: 'linear-gradient(180deg, rgba(5,5,12,0.35) 0%, rgba(5,5,12,0.55) 45%, var(--bg-page) 100%)',
         }} />
 
-        <div className="relative max-w-7xl mx-auto px-4 md:px-8 pt-14 md:pt-20 pb-28 md:pb-32">
+        <div className="relative max-w-7xl mx-auto px-4 md:px-8 pt-14 md:pt-20 pb-10 md:pb-14">
           {isSearching ? (
             <>
               <p className="text-[11px] uppercase tracking-widest text-red-400 font-semibold font-mono mb-2">
@@ -208,7 +208,7 @@ export default function Home() {
               </p>
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-none text-white">
                 {total != null ? (
-                  <><span className="font-mono">{total.toLocaleString('de-DE')}</span><span className="text-red-500"> makina</span></>
+                  <><span className="font-mono">{total.toLocaleString('de-DE')}</span><span className="font-display uppercase text-red-500"> makina</span></>
                 ) : (
                   <span className="animate-pulse text-gray-500">Duke ngarkuar...</span>
                 )}
@@ -219,9 +219,15 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Filters — glass card floating over the hero */}
-      <div ref={filtersWrapRef} className="max-w-7xl mx-auto px-4 md:px-8 -mt-14 md:-mt-16 relative z-10">
-        <div className="glass-card rounded-2xl p-3 sm:p-4 shadow-2xl">
+      {/* Filters — full-width glass bar directly below the hero */}
+      <div ref={filtersWrapRef}
+           style={{
+             background: 'var(--glass-bg)',
+             borderBottom: '1px solid var(--glass-border)',
+             backdropFilter: 'blur(20px) saturate(140%)',
+             WebkitBackdropFilter: 'blur(20px) saturate(140%)',
+           }}>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
           <Filters
             filters={filters}
             onChange={handleFilterChange}

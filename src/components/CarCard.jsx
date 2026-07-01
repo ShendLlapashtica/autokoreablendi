@@ -39,9 +39,9 @@ export default function CarCard({ car }) {
       to={`/car/${car.Id}`}
       state={{ car }}
       className="group flex flex-col rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-0.5 glass-card"
-      style={{ boxShadow: 'none' }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(220,38,38,0.3)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(220,38,38,0.05)'; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
+      style={{ boxShadow: 'none', borderColor: 'rgba(220,38,38,0.12)' }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(220,38,38,0.4)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(220,38,38,0.08)'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(220,38,38,0.12)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
       {/* Photo */}
       <div className="relative overflow-hidden flex-shrink-0" style={{ aspectRatio: '16/10', background: 'var(--bg-card2)' }}>
@@ -89,56 +89,56 @@ export default function CarCard({ car }) {
         </div>
 
         {/* Attribute grid */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+        <div className="grid grid-cols-2 gap-1.5 text-xs">
           {car.Mileage != null && (
-            <div className="flex items-center gap-1.5" style={{ color: 'var(--text-2)' }}>
-              <span style={{ color: 'var(--text-3)' }}>km</span>
-              <span className="font-mono font-semibold" style={{ color: 'var(--text-1)' }}>{fmtKm(car.Mileage)}</span>
+            <div className="flex items-center gap-1.5 rounded-lg px-2 py-1" style={{ background: 'var(--bg-input)', color: 'var(--text-2)' }}>
+              <span className="text-red-500/70">km</span>
+              <span className="font-mono font-semibold truncate" style={{ color: 'var(--text-1)' }}>{fmtKm(car.Mileage)}</span>
             </div>
           )}
           {trans && trans !== '—' && (
-            <div className="flex items-center gap-1.5" style={{ color: 'var(--text-2)' }}>
-              <span style={{ color: 'var(--text-3)' }}>⚙</span>
+            <div className="flex items-center gap-1.5 rounded-lg px-2 py-1" style={{ background: 'var(--bg-input)', color: 'var(--text-2)' }}>
+              <span className="text-red-500/70">⚙</span>
               <span className="truncate">{trans}</span>
             </div>
           )}
           {cc && (
-            <div className="flex items-center gap-1.5" style={{ color: 'var(--text-2)' }}>
-              <span style={{ color: 'var(--text-3)' }}>cc</span>
-              <span className="font-mono" style={{ color: 'var(--text-1)' }}>{Number(cc).toLocaleString('de-DE')}</span>
+            <div className="flex items-center gap-1.5 rounded-lg px-2 py-1" style={{ background: 'var(--bg-input)', color: 'var(--text-2)' }}>
+              <span className="text-red-500/70">cc</span>
+              <span className="font-mono truncate" style={{ color: 'var(--text-1)' }}>{Number(cc).toLocaleString('de-DE')}</span>
             </div>
           )}
           {drive && (
-            <div className="flex items-center gap-1.5" style={{ color: 'var(--text-2)' }}>
-              <span style={{ color: 'var(--text-3)' }}>↕</span>
+            <div className="flex items-center gap-1.5 rounded-lg px-2 py-1" style={{ background: 'var(--bg-input)', color: 'var(--text-2)' }}>
+              <span className="text-red-500/70">↕</span>
               <span className="truncate">{drive}</span>
             </div>
           )}
           {color && color !== '—' && (
-            <div className="flex items-center gap-1.5" style={{ color: 'var(--text-2)' }}>
-              <span style={{ color: 'var(--text-3)' }}>◐</span>
+            <div className="flex items-center gap-1.5 rounded-lg px-2 py-1" style={{ background: 'var(--bg-input)', color: 'var(--text-2)' }}>
+              <span className="text-red-500/70">◐</span>
               <span className="truncate">{color}</span>
             </div>
           )}
           {city && (
-            <div className="flex items-center gap-1.5" style={{ color: 'var(--text-2)' }}>
+            <div className="flex items-center gap-1.5 rounded-lg px-2 py-1" style={{ background: 'var(--bg-input)', color: 'var(--text-2)' }}>
               <span>🇰🇷</span>
               <span className="truncate">{city}</span>
             </div>
           )}
         </div>
 
-        <div style={{ borderTop: '1px solid var(--border-lo)' }} />
+        <div style={{ background: 'linear-gradient(90deg, transparent, rgba(220,38,38,0.35), transparent)', height: '1px' }} />
 
         {/* Price */}
         <div className="flex items-end justify-between mt-auto">
           <div>
-            <p className="font-mono text-xl font-bold tracking-tight leading-none" style={{ color: 'var(--text-1)' }}>
+            <p className="font-mono text-2xl font-extrabold tracking-tight leading-none text-red-500">
               {price > 0 ? fmtEur(price) : '—'}
             </p>
-            <p className="text-[10px] mt-1" style={{ color: 'var(--text-3)' }}>{label}</p>
+            <p className="text-[10px] mt-1.5" style={{ color: 'var(--text-3)' }}>{label}</p>
           </div>
-          <span className="text-xs font-semibold text-red-500 group-hover:text-red-400 transition-colors pb-0.5 font-mono">
+          <span className="flex items-center gap-1 text-xs font-bold text-white px-3 py-2 rounded-lg bg-red-600 group-hover:bg-red-500 transition-colors">
             SHIKO →
           </span>
         </div>

@@ -80,7 +80,7 @@ export default function Header() {
 
           {/* Logo */}
           <Link to="/" className="flex items-center group select-none flex-shrink-0 mr-2 bg-black rounded-lg px-2 py-1">
-            <img src="/logo.png" alt="AUTO VG" className="h-8 w-auto" />
+            <img src="/logo.png" alt="AUTO VG" className="h-11 w-auto" />
           </Link>
 
           {/* Search — desktop */}

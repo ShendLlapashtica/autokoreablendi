@@ -26,6 +26,7 @@ const PRICES = [5000, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 10
 const EMPTY = { manufacturer: '', model: '', fuel: '', yearFrom: '', yearTo: '', mileageTo: '', priceFrom: '', priceTo: '' };
 
 function Sel({ label, value, onChange, disabled, children }) {
+  const active = !!value;
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-[10px] uppercase tracking-wider font-mono font-semibold" style={{ color: 'var(--text-3)' }}>
@@ -36,11 +37,16 @@ function Sel({ label, value, onChange, disabled, children }) {
           value={value}
           onChange={e => onChange(e.target.value)}
           disabled={disabled}
-          className="select pr-8 text-sm appearance-none w-full disabled:opacity-40 disabled:cursor-not-allowed"
+          className="pr-8 text-sm font-semibold appearance-none w-full rounded-xl px-3.5 py-3 cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none"
+          style={{
+            background: active ? 'rgba(220,38,38,0.12)' : 'var(--bg-card)',
+            border: `1.5px solid ${active ? 'rgba(220,38,38,0.5)' : 'var(--border)'}`,
+            color: active ? '#f87171' : 'var(--text-1)',
+          }}
         >
           {children}
         </select>
-        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--text-3)' }} />
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: active ? '#f87171' : 'var(--text-3)' }} />
       </div>
     </div>
   );
@@ -70,7 +76,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
   const models      = MODELS_BY_BRAND[filters.manufacturer] || [];
 
   const filterContent = (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
       <Sel label="Prodhuesi" value={filters.manufacturer} onChange={set('manufacturer')}>
         <option value="">Të gjithë</option>
         {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
@@ -106,10 +112,10 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <label className="text-[10px] invisible">x</label>
           <button
             onClick={() => { onChange(EMPTY); close(); }}
-            className="flex items-center justify-center gap-1.5 h-[42px] text-xs rounded-xl transition-all"
-            style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text-3)' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(239,68,68,0.35)'; e.currentTarget.style.color = '#ef4444'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-3)'; }}
+            className="flex items-center justify-center gap-1.5 py-3 text-sm font-semibold rounded-xl transition-all"
+            style={{ background: 'rgba(239,68,68,0.1)', border: '1.5px solid rgba(239,68,68,0.3)', color: '#ef4444' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.18)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
           >
             <RotateCcw className="w-3.5 h-3.5" />Pastro
           </button>
