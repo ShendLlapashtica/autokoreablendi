@@ -12,7 +12,7 @@ const FUEL_COLOR = {
   'Elektrik': 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25',
   'Hibrid':   'bg-teal-500/15 text-teal-300 border-teal-500/25',
   'Naftë':    'bg-amber-500/15 text-amber-300 border-amber-500/25',
-  'default':  'bg-blue-500/15 text-blue-300 border-blue-500/25',
+  'default':  'bg-red-500/15 text-red-300 border-red-500/25',
 };
 
 export default function CarCard({ car }) {
@@ -44,7 +44,7 @@ export default function CarCard({ car }) {
         border: '1px solid var(--border)',
         boxShadow: 'none',
       }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(59,130,246,0.3)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(59,130,246,0.05)'; }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(220,38,38,0.3)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(220,38,38,0.05)'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
       {/* Photo */}
@@ -142,7 +142,7 @@ export default function CarCard({ car }) {
             </p>
             <p className="text-[10px] mt-1" style={{ color: 'var(--text-3)' }}>{label}</p>
           </div>
-          <span className="text-xs font-semibold text-blue-500 group-hover:text-blue-400 transition-colors pb-0.5 font-mono">
+          <span className="text-xs font-semibold text-red-500 group-hover:text-red-400 transition-colors pb-0.5 font-mono">
             SHIKO →
           </span>
         </div>

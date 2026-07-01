@@ -5,6 +5,7 @@ import { useCountry } from '../contexts/CountryContext.jsx';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import CustomsCalculator from './CustomsCalculator.jsx';
 import MobileMenu from './MobileMenu.jsx';
+import { Logo } from './Logo.jsx';
 
 const BRANDS = [
   'BMW','Mercedes-Benz','Audi','Volkswagen','Porsche',
@@ -93,15 +94,8 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center gap-2 h-14">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-1.5 group select-none flex-shrink-0 mr-2">
-            <div className="flex flex-col leading-none">
-              <span className="font-mono font-bold text-xl tracking-tight group-hover:text-blue-400 transition-colors" style={{ color: 'var(--text-1)' }}>
-                X<span className="text-blue-500">K</span>OR
-              </span>
-              <span style={{ fontSize: '7.5px', letterSpacing: '0.4px', color: 'var(--text-4)', opacity: 0.45, marginTop: '1px', fontWeight: 400 }}>
-                nga WEBORA.KS
-              </span>
-            </div>
+          <Link to="/" className="flex items-center group select-none flex-shrink-0 mr-2">
+            <Logo />
           </Link>
 
           {/* Search — desktop */}
@@ -126,7 +120,7 @@ export default function Header() {
                 onClick={() => setCountry('AL')}
                 title="Shqipëri – çmim Durrës"
                 className={`px-2.5 py-1.5 text-base leading-none transition-all
-                  ${country === 'AL' ? 'bg-blue-600' : 'hover:bg-card2'}`}
+                  ${country === 'AL' ? 'bg-red-600' : 'hover:bg-card2'}`}
               >
                 🇦🇱
               </button>
@@ -134,7 +128,7 @@ export default function Header() {
                 onClick={() => setCountry('XK')}
                 title="Kosovë – çmim Prishtinë"
                 className={`px-2.5 py-1.5 text-base leading-none transition-all
-                  ${country === 'XK' ? 'bg-blue-600' : 'hover:bg-card2'}`}
+                  ${country === 'XK' ? 'bg-red-600' : 'hover:bg-card2'}`}
               >
                 🇽🇰
               </button>
@@ -157,7 +151,7 @@ export default function Header() {
               {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            <a href="https://wa.me/38349644168" target="_blank" rel="noopener noreferrer"
+            <a href="https://wa.me/38348407634" target="_blank" rel="noopener noreferrer"
                className="hidden sm:inline-flex btn-primary text-xs py-1.5 px-3">
               WhatsApp
             </a>
@@ -180,9 +174,9 @@ export default function Header() {
                 <X className="w-5 h-5" style={{ color: 'var(--text-1)' }} />
               ) : (
                 <div className="flex flex-col justify-center gap-[6px]">
-                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#5b86e5,#bc4e9c)' }} />
-                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#7b63e8,#e0639a)' }} />
-                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#bc4e9c,#f09 )' }} />
+                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#ef4444,#dc2626)' }} />
+                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#f87171,#dc2626)' }} />
+                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#dc2626,#991b1b)' }} />
                 </div>
               )}
             </button>

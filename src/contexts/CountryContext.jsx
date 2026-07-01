@@ -5,12 +5,12 @@ const Ctx = createContext(null);
 
 export function CountryProvider({ children }) {
   const [country, setCountryState] = useState(
-    () => localStorage.getItem('xkor_country') || 'XK'
+    () => localStorage.getItem('autovg_country') || 'XK'
   );
 
   function setCountry(c) {
     setCountryState(c);
-    localStorage.setItem('xkor_country', c);
+    localStorage.setItem('autovg_country', c);
   }
 
   function priceFor(manwon) {

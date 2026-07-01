@@ -63,7 +63,7 @@ export default function ImageGallery({ photos = [], alt = '' }) {
               key={i}
               onClick={() => setActive(i)}
               className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all duration-150
-                ${i === active ? 'border-blue-500' : 'border-white/10 opacity-60 hover:opacity-100'}`}
+                ${i === active ? 'border-red-500' : 'border-white/10 opacity-60 hover:opacity-100'}`}
             >
               <img src={src} alt="" className="w-full h-full object-cover"
                 onError={() => setErrors(e => ({ ...e, [i]: true }))} />

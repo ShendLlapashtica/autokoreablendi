@@ -47,7 +47,7 @@ export async function checkApiKey(req, res) {
 
   // Valid key — check daily quota
   const today = new Date().toISOString().slice(0, 10); // e.g. "2026-06-30"
-  const rKey  = `xkor:rl:${today}`;
+  const rKey  = `autovg:rl:${today}`;
   const count = await redisIncr(rKey);
 
   if (count !== null) {

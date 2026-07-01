@@ -16,9 +16,9 @@ import { translateFuel, translateTrans, translateOption, translateColor } from '
 import { useCountry } from '../contexts/CountryContext.jsx';
 import { fetchInspect } from '../lib/inspectClient.js';
 
-const WHATSAPP    = '38349644168';
-const PHONE       = '+383 49 644 168';
-const PHONE_DISP  = '049 644 168';
+const WHATSAPP    = '38348407634';
+const PHONE       = '+383 48 407 634';
+const PHONE_DISP  = '048 407 634';
 const EMAIL       = 'shendillapashtica@gmail.com';
 
 const MONTHS_ALB = ['Jan','Shk','Mar','Pri','Maj','Qer','Kor','Gus','Sht','Tet','Nën','Dhj'];
@@ -38,7 +38,7 @@ function Row({ label, value, mono, highlight }) {
     <div className="flex items-start py-2.5" style={{ borderBottom: '1px solid var(--border-lo)' }}>
       <span className="text-xs w-40 flex-shrink-0 pt-0.5" style={{ color: 'var(--text-3)' }}>{label}</span>
       <span className={`text-sm font-medium ${mono ? 'font-mono text-xs' : ''}`}
-        style={{ color: highlight ? '#60a5fa' : 'var(--text-2)' }}>
+        style={{ color: highlight ? '#f87171' : 'var(--text-2)' }}>
         {value}
       </span>
     </div>
@@ -114,14 +114,14 @@ export default function CarDetail() {
 
   if (loadingCar) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-page)' }}>
-      <span className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+      <span className="w-8 h-8 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
     </div>
   );
 
   if (error || !car) return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: 'var(--bg-page)' }}>
       <p style={{ color: 'var(--text-3)' }}>Makina nuk u gjet.</p>
-      <Link to="/" className="text-blue-400 hover:underline text-sm">← Kthehu</Link>
+      <Link to="/" className="text-red-400 hover:underline text-sm">← Kthehu</Link>
     </div>
   );
 
@@ -181,7 +181,7 @@ export default function CarDetail() {
       {/* Breadcrumb */}
       <div style={{ borderBottom: '1px solid var(--border-lo)' }}>
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-11 flex items-center gap-3 text-sm">
-          <Link to="/" className="flex items-center gap-1.5 transition-colors hover:text-blue-400" style={{ color: 'var(--text-3)' }}>
+          <Link to="/" className="flex items-center gap-1.5 transition-colors hover:text-red-400" style={{ color: 'var(--text-3)' }}>
             <ArrowLeft className="w-3.5 h-3.5" />Kthehu
           </Link>
           <span style={{ color: 'var(--text-4)' }}>/</span>
@@ -189,7 +189,7 @@ export default function CarDetail() {
           {id && (
             <a href={`https://www.encar.com/dc/dc_cardetailview.do?carid=${id}`}
                target="_blank" rel="noopener noreferrer"
-               className="ml-auto flex items-center gap-1 text-xs transition-colors hover:text-blue-400"
+               className="ml-auto flex items-center gap-1 text-xs transition-colors hover:text-red-400"
                style={{ color: 'var(--text-3)' }}>
               <ExternalLink className="w-3 h-3" />Encar
             </a>
@@ -237,7 +237,7 @@ export default function CarDetail() {
                      style={{ background: 'linear-gradient(135deg,#25d366,#128c7e)' }}>
                     <MessageCircle className="w-4 h-4" />WhatsApp
                   </a>
-                  <a href="tel:+38349644168"
+                  <a href="tel:+38348407634"
                      className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl font-semibold text-sm transition-all btn-ghost">
                     <Phone className="w-4 h-4" />{PHONE_DISP}
                   </a>
@@ -249,7 +249,7 @@ export default function CarDetail() {
                 {id && (
                   <a href={`https://www.encar.com/dc/dc_cardetailview.do?carid=${id}`}
                      target="_blank" rel="noopener noreferrer"
-                     className="flex items-center gap-1 hover:text-blue-400 transition-colors ml-auto">
+                     className="flex items-center gap-1 hover:text-red-400 transition-colors ml-auto">
                     <ExternalLink className="w-3.5 h-3.5" />Shiko origjinalin Encar
                   </a>
                 )}
@@ -259,14 +259,14 @@ export default function CarDetail() {
             {/* Title + status */}
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-widest text-blue-500/70 font-semibold mb-1">{manufacturer}</p>
+                <p className="text-xs uppercase tracking-widest text-red-500/70 font-semibold mb-1">{manufacturer}</p>
                 <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: 'var(--text-1)' }}>{model}</h1>
                 {subtitle && <p className="text-sm mt-1" style={{ color: 'var(--text-2)' }}>{subtitle}</p>}
               </div>
               {conditions.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 justify-end">
                   {conditions.map(c => (
-                    <span key={c} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    <span key={c} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
                       {c === 'Inspection' ? '✓ Inspektuar' : c === 'Warranty' ? '✓ Garanci' : c === 'Record' ? '✓ Histori' : c}
                     </span>
                   ))}
@@ -360,7 +360,7 @@ export default function CarDetail() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-4">
                   {options.map((opt, i) => (
                     <div key={i} className="flex items-center gap-2 py-1 text-sm">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500/70 flex-shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500/70 flex-shrink-0" />
                       <span style={{ color: 'var(--text-2)' }}>{translateOption(opt)}</span>
                     </div>
                   ))}
@@ -386,7 +386,7 @@ export default function CarDetail() {
                 {loadingInspect ? (
                   <div className="flex items-center gap-2 py-8 justify-center"
                        style={{ color: 'var(--text-3)' }}>
-                    <span className="w-4 h-4 border-2 border-gray-700 border-t-blue-500 rounded-full animate-spin" />
+                    <span className="w-4 h-4 border-2 border-gray-700 border-t-red-500 rounded-full animate-spin" />
                     <span className="text-sm">Duke ngarkuar raportin...</span>
                   </div>
                 ) : (
@@ -403,8 +403,8 @@ export default function CarDetail() {
                         <button key={key} onClick={() => setReportTab(key)}
                           className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
                           style={reportTab === key
-                            ? { background: 'rgba(59,130,246,0.15)', color: '#60a5fa',
-                                border: '1px solid rgba(59,130,246,0.3)' }
+                            ? { background: 'rgba(220,38,38,0.15)', color: '#f87171',
+                                border: '1px solid rgba(220,38,38,0.3)' }
                             : { color: 'var(--text-4)', border: '1px solid var(--border-lo)' }}>
                           {label}
                         </button>
@@ -533,8 +533,8 @@ export default function CarDetail() {
                                       style={{ color: 'var(--text-2)' }}>{h.date || '—'}</span>
                                 {h.insurance && (
                                   <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full"
-                                        style={{ background: 'rgba(59,130,246,0.12)',
-                                                 color: '#60a5fa' }}>Sigurim</span>
+                                        style={{ background: 'rgba(220,38,38,0.12)',
+                                                 color: '#f87171' }}>Sigurim</span>
                                 )}
                               </div>
                               <span className="text-xs font-semibold"
@@ -554,7 +554,7 @@ export default function CarDetail() {
                     {reportTab === 'sigurimi' && (
                       loadingAccident ? (
                         <div className="flex items-center gap-2 py-8 justify-center" style={{ color: 'var(--text-3)' }}>
-                          <span className="w-4 h-4 border-2 border-gray-700 border-t-blue-500 rounded-full animate-spin" />
+                          <span className="w-4 h-4 border-2 border-gray-700 border-t-red-500 rounded-full animate-spin" />
                           <span className="text-sm">Duke ngarkuar historikun...</span>
                         </div>
                       ) : (!accident || accident.apiError || !accident.hasRecord) ? (
@@ -656,11 +656,11 @@ export default function CarDetail() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold" style={{ color: 'var(--text-1)' }}>
                 Makina të ngjashme ·{' '}
-                <span className="text-blue-400">{manufacturer}</span>
+                <span className="text-red-400">{manufacturer}</span>
               </h2>
               <Link
                 to={`/?brand=${encodeURIComponent(manufacturer)}`}
-                className="text-sm text-blue-500 hover:text-blue-400 font-medium transition-colors"
+                className="text-sm text-red-500 hover:text-red-400 font-medium transition-colors"
               >
                 Shiko të gjitha →
               </Link>

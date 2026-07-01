@@ -39,7 +39,7 @@ export default function CustomsCalculator({ onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <Calculator className="w-5 h-5 text-blue-500" />
+            <Calculator className="w-5 h-5 text-red-500" />
             <h2 className="text-base font-bold" style={{ color: 'var(--text-1)' }}>Kalkulatori i Doganës</h2>
           </div>
           <button onClick={onClose}
@@ -134,7 +134,7 @@ function Line({ label, val, accent, bold, muted }) {
     <div className="flex justify-between text-sm">
       <span style={{ color: muted ? 'var(--text-4)' : 'var(--text-3)' }}>{label}</span>
       <span className={`font-mono font-semibold ${bold ? 'text-base' : ''}`}
-            style={{ color: bold ? 'var(--text-1)' : accent ? '#60a5fa' : 'var(--text-2)' }}>
+            style={{ color: bold ? 'var(--text-1)' : accent ? '#f87171' : 'var(--text-2)' }}>
         {val}
       </span>
     </div>

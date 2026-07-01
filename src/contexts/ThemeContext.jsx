@@ -4,7 +4,7 @@ const Ctx = createContext(null);
 
 export function ThemeProvider({ children }) {
   const [dark, setDarkState] = useState(
-    () => localStorage.getItem('xkor_theme') === 'dark'
+    () => localStorage.getItem('autovg_theme') === 'dark'
   );
 
   useEffect(() => {
@@ -16,7 +16,7 @@ export function ThemeProvider({ children }) {
       html.classList.add('light');
       html.classList.remove('dark');
     }
-    localStorage.setItem('xkor_theme', dark ? 'dark' : 'light');
+    localStorage.setItem('autovg_theme', dark ? 'dark' : 'light');
   }, [dark]);
 
   return (

@@ -23,18 +23,18 @@ html.light {
   --bg-page:    #eef3fb;
   --bg-card:    rgba(255,255,255,0.82);
   --bg-card2:   rgba(240,247,255,0.7);
-  --bg-input:   rgba(59,130,246,0.04);
-  --border:     rgba(59,130,246,0.1);
-  --border-lo:  rgba(59,130,246,0.06);
+  --bg-input:   rgba(220,38,38,0.04);
+  --border:     rgba(220,38,38,0.1);
+  --border-lo:  rgba(220,38,38,0.06);
   --text-1:     #0f172a;
   --text-2:     #334155;
   --text-3:     #64748b;
   --text-4:     #e2e8f0;
 }
 
-/* Light mode: very subtle blue glassmorphic background */
+/* Light mode: very subtle red glassmorphic background */
 html.light body {
-  background: linear-gradient(145deg, #e8f0fc 0%, #eef3fb 40%, #e4eefa 70%, #ecf2fd 100%);
+  background: linear-gradient(145deg, #fcebe8 0%, #fbeeee 40%, #fae4e4 70%, #fdecec 100%);
   background-attachment: fixed;
 }
 
@@ -75,8 +75,8 @@ html.light body {
     backdrop-filter: blur(16px);
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600
-           hover:bg-blue-500 active:scale-95 text-white font-semibold rounded-xl
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-red-600
+           hover:bg-red-500 active:scale-95 text-white font-semibold rounded-xl
            transition-all duration-150 disabled:opacity-40 select-none;
   }
   .btn-ghost {
@@ -89,7 +89,7 @@ html.light body {
   .btn-ghost:hover { color: var(--text-1); background: var(--bg-card2); }
   .input {
     @apply w-full rounded-xl px-4 py-2.5 placeholder:text-gray-500
-           focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-all;
+           focus:outline-none focus:ring-1 focus:ring-red-500/30 transition-all;
     background: var(--bg-input);
     border: 1px solid var(--border);
     color: var(--text-1);

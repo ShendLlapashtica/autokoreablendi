@@ -119,7 +119,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.manufacturer} onChange={e => set('manufacturer')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.manufacturer ? 'rgba(59,130,246,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.manufacturer ? 'rgba(59,130,246,0.3)' : 'var(--border)'}`, color: filters.manufacturer ? '#60a5fa' : 'var(--text-3)' }}>
+                    style={{ background: filters.manufacturer ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.manufacturer ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.manufacturer ? '#f87171' : 'var(--text-3)' }}>
               <option value="">Prodhuesi</option>
               {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
@@ -130,7 +130,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.fuel} onChange={e => set('fuel')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.fuel ? 'rgba(59,130,246,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.fuel ? 'rgba(59,130,246,0.3)' : 'var(--border)'}`, color: filters.fuel ? '#60a5fa' : 'var(--text-3)' }}>
+                    style={{ background: filters.fuel ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.fuel ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.fuel ? '#f87171' : 'var(--text-3)' }}>
               {FUELS.map(f => <option key={f.val} value={f.val}>{f.label}</option>)}
             </select>
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style={{ color: 'var(--text-4)' }} />
@@ -140,7 +140,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.yearFrom} onChange={e => set('yearFrom')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.yearFrom ? 'rgba(59,130,246,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.yearFrom ? 'rgba(59,130,246,0.3)' : 'var(--border)'}`, color: filters.yearFrom ? '#60a5fa' : 'var(--text-3)' }}>
+                    style={{ background: filters.yearFrom ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.yearFrom ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.yearFrom ? '#f87171' : 'var(--text-3)' }}>
               <option value="">Viti nga</option>
               {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
@@ -151,7 +151,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.yearTo} onChange={e => set('yearTo')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.yearTo ? 'rgba(59,130,246,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.yearTo ? 'rgba(59,130,246,0.3)' : 'var(--border)'}`, color: filters.yearTo ? '#60a5fa' : 'var(--text-3)' }}>
+                    style={{ background: filters.yearTo ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.yearTo ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.yearTo ? '#f87171' : 'var(--text-3)' }}>
               <option value="">Viti deri</option>
               {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
@@ -162,7 +162,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.mileageTo} onChange={e => set('mileageTo')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.mileageTo ? 'rgba(59,130,246,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.mileageTo ? 'rgba(59,130,246,0.3)' : 'var(--border)'}`, color: filters.mileageTo ? '#60a5fa' : 'var(--text-3)' }}>
+                    style={{ background: filters.mileageTo ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.mileageTo ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.mileageTo ? '#f87171' : 'var(--text-3)' }}>
               {KM_MAX.map(k => <option key={k.val} value={k.val}>{k.label}</option>)}
             </select>
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style={{ color: 'var(--text-4)' }} />
@@ -189,7 +189,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
               <h3 className="font-bold text-base" style={{ color: 'var(--text-1)' }}>
                 Filtra
                 {activeCount > 0 && (
-                  <span className="ml-2 text-xs font-mono bg-blue-600 text-white px-2 py-0.5 rounded-full">
+                  <span className="ml-2 text-xs font-mono bg-red-600 text-white px-2 py-0.5 rounded-full">
                     {activeCount}
                   </span>
                 )}
@@ -231,7 +231,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <SlidersHorizontal className="w-3.5 h-3.5" />
           Filtra
           {activeCount > 0 && (
-            <span className="text-[10px] font-bold font-mono bg-blue-600 text-white px-1.5 py-0.5 rounded-full leading-none">
+            <span className="text-[10px] font-bold font-mono bg-red-600 text-white px-1.5 py-0.5 rounded-full leading-none">
               {activeCount}
             </span>
           )}

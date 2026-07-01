@@ -24,42 +24,35 @@ export default function handler() {
           position: 'absolute', top: '-120px', right: '-80px',
           width: '500px', height: '500px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(91,134,229,0.12) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(220,38,38,0.14) 0%, transparent 70%)',
           display: 'flex',
         }} />
         <div style={{
           position: 'absolute', bottom: '-100px', left: '200px',
           width: '400px', height: '400px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(188,78,156,0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(220,38,38,0.08) 0%, transparent 70%)',
           display: 'flex',
         }} />
 
         {/* Top: Logo + tagline */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '14px' }}>
             <span style={{ fontSize: '80px', fontWeight: 900, color: '#f1f5f9', letterSpacing: '-2px', fontFamily: 'monospace' }}>
-              X
+              AUTO
             </span>
-            <span style={{ fontSize: '80px', fontWeight: 900, color: '#3b82f6', letterSpacing: '-2px', fontFamily: 'monospace' }}>
-              K
-            </span>
-            <span style={{ fontSize: '80px', fontWeight: 900, color: '#f1f5f9', letterSpacing: '-2px', fontFamily: 'monospace' }}>
-              OR
+            <span style={{ fontSize: '80px', fontWeight: 900, color: '#dc2626', letterSpacing: '-2px', fontFamily: 'monospace' }}>
+              VG
             </span>
           </div>
 
           {/* Accent line */}
           <div style={{
             width: '80px', height: '3px', borderRadius: '2px',
-            background: 'linear-gradient(90deg, #5b86e5, #bc4e9c)',
+            background: 'linear-gradient(90deg, #ef4444, #991b1b)',
             display: 'flex',
           }} />
-
-          <div style={{ fontSize: '26px', color: '#64748b', marginTop: '4px', fontWeight: 400, letterSpacing: '0.2px' }}>
-            nga WEBORA.KS
-          </div>
         </div>
 
         {/* Middle: Main value prop */}
@@ -69,9 +62,9 @@ export default function handler() {
           </div>
           <div style={{ fontSize: '44px', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.5px', display: 'flex', gap: '12px' }}>
             <span style={{ color: '#f1f5f9' }}>për</span>
-            <span style={{ color: '#3b82f6' }}>Shqipëri</span>
+            <span style={{ color: '#dc2626' }}>Shqipëri</span>
             <span style={{ color: '#94a3b8' }}>&</span>
-            <span style={{ color: '#60a5fa' }}>Kosovë</span>
+            <span style={{ color: '#ef4444' }}>Kosovë</span>
           </div>
           <div style={{ fontSize: '22px', color: '#475569', marginTop: '4px', fontWeight: 400 }}>
             🇰🇷 → 🇦🇱 🇽🇰  ·  Çmim all-in · Inspektim Encar · Dorëzim 30–45 ditë
@@ -85,8 +78,8 @@ export default function handler() {
             <span style={{ fontSize: '16px', color: '#475569', fontWeight: 500 }}>listëzime live · drejtpërdrejt nga Encar</span>
           </div>
           <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-            <span style={{ fontSize: '18px', color: '#334155', fontWeight: 600 }}>xkor.vercel.app</span>
-            <span style={{ fontSize: '14px', color: '#1e3a5f', fontWeight: 400 }}>+383 49 644 168</span>
+            <span style={{ fontSize: '18px', color: '#334155', fontWeight: 600 }}>auto-vg.vercel.app</span>
+            <span style={{ fontSize: '14px', color: '#5f1616', fontWeight: 400 }}>+383 48 407 634</span>
           </div>
         </div>
       </div>

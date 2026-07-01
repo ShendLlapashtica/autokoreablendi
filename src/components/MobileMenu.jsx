@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { X, Calculator, Sun, Moon, ChevronRight } from 'lucide-react';
 import { useEffect } from 'react';
+import { Logo } from './Logo.jsx';
 
 export default function MobileMenu({ onClose, onOpenCalc, country, setCountry, dark, toggleTheme }) {
   useEffect(() => {
@@ -17,9 +18,7 @@ export default function MobileMenu({ onClose, onOpenCalc, country, setCountry, d
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
-          <span className="font-mono font-bold text-lg" style={{ color: 'var(--text-1)' }}>
-            X<span className="text-blue-500">K</span>OR
-          </span>
+          <Logo size="text-lg" />
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full btn-ghost" style={{ color: 'var(--text-1)' }}>
             <X className="w-4 h-4" />
           </button>
@@ -34,7 +33,7 @@ export default function MobileMenu({ onClose, onOpenCalc, country, setCountry, d
             <button
               onClick={() => setCountry('AL')}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all
-                ${country === 'AL' ? 'bg-blue-600 text-white' : ''}`}
+                ${country === 'AL' ? 'bg-red-600 text-white' : ''}`}
               style={country !== 'AL' ? { color: 'var(--text-2)' } : {}}
             >
               🇦🇱 Durrës
@@ -42,7 +41,7 @@ export default function MobileMenu({ onClose, onOpenCalc, country, setCountry, d
             <button
               onClick={() => setCountry('XK')}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all
-                ${country === 'XK' ? 'bg-blue-600 text-white' : ''}`}
+                ${country === 'XK' ? 'bg-red-600 text-white' : ''}`}
               style={country !== 'XK' ? { color: 'var(--text-2)' } : {}}
             >
               🇽🇰 Prishtinë
@@ -56,7 +55,7 @@ export default function MobileMenu({ onClose, onOpenCalc, country, setCountry, d
             onClick={onOpenCalc}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-card2"
           >
-            <Calculator className="w-4 h-4 text-blue-400" />
+            <Calculator className="w-4 h-4 text-red-400" />
             <span className="flex-1 text-left text-sm font-medium" style={{ color: 'var(--text-1)' }}>Kalkulatori i Doganës</span>
             <ChevronRight className="w-3.5 h-3.5" style={{ color: 'var(--text-3)' }} />
           </button>
@@ -71,7 +70,7 @@ export default function MobileMenu({ onClose, onOpenCalc, country, setCountry, d
         {/* Why us */}
         <div className="flex-1 px-4 py-3" style={{ borderTop: '1px solid var(--border-lo)' }}>
           <p className="text-[10px] uppercase tracking-widest mb-3 font-mono font-semibold" style={{ color: 'var(--text-3)' }}>
-            Pse XKOR?
+            Pse AUTO VG?
           </p>
           <div className="space-y-2.5">
             {[
@@ -91,17 +90,17 @@ export default function MobileMenu({ onClose, onOpenCalc, country, setCountry, d
 
         {/* Footer CTA */}
         <div className="p-4 space-y-2" style={{ borderTop: '1px solid var(--border)' }}>
-          <a href="https://wa.me/38349644168" target="_blank" rel="noopener noreferrer"
+          <a href="https://wa.me/38348407634" target="_blank" rel="noopener noreferrer"
              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white text-sm transition-all hover:brightness-110"
              style={{ background: 'linear-gradient(135deg,#25d366,#128c7e)' }}
              onClick={onClose}>
-            💬 WhatsApp · 049 644 168
+            💬 WhatsApp · 048 407 634
           </a>
-          <a href="tel:+38349644168"
+          <a href="tel:+38348407634"
              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold btn-ghost"
              style={{ color: 'var(--text-1)' }}
              onClick={onClose}>
-            📞 049 644 168
+            📞 048 407 634
           </a>
         </div>
       </div>

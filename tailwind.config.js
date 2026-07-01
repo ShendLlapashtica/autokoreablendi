@@ -7,7 +7,7 @@ export default {
       colors: {
         surface: '#0b0b14',
         card:    '#10101e',
-        accent:  '#2563eb',
+        accent:  '#dc2626',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],

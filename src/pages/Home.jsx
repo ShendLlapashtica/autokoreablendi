@@ -170,7 +170,7 @@ export default function Home() {
           <div>
             {isSearching ? (
               <>
-                <p className="text-[11px] uppercase tracking-widest text-blue-500/70 font-semibold font-mono mb-2">
+                <p className="text-[11px] uppercase tracking-widest text-red-500/70 font-semibold font-mono mb-2">
                   Rezultate për
                 </p>
                 <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight leading-none flex items-center gap-3" style={{ color: 'var(--text-1)' }}>
@@ -187,12 +187,12 @@ export default function Home() {
               </>
             ) : (
               <>
-                <p className="text-[11px] uppercase tracking-widest text-blue-500/70 font-semibold mb-2 font-mono">
+                <p className="text-[11px] uppercase tracking-widest text-red-500/70 font-semibold mb-2 font-mono">
                   Tregti direkte · Korea Jugore
                 </p>
                 <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight leading-none" style={{ color: 'var(--text-1)' }}>
                   {total != null ? (
-                    <><span className="font-mono">{total.toLocaleString('de-DE')}</span><span className="text-blue-500"> makina</span></>
+                    <><span className="font-mono">{total.toLocaleString('de-DE')}</span><span className="text-red-500"> makina</span></>
                   ) : (
                     <span className="animate-pulse" style={{ color: 'var(--text-4)' }}>Duke ngarkuar...</span>
                   )}
@@ -201,7 +201,7 @@ export default function Home() {
               </>
             )}
           </div>
-          <TrendingUp className="w-10 h-10 text-blue-500/15 hidden md:block" />
+          <TrendingUp className="w-10 h-10 text-red-500/15 hidden md:block" />
         </div>
       </div>
 
@@ -232,7 +232,7 @@ export default function Home() {
             <SlidersHorizontal className="w-3.5 h-3.5" />
             Filtra
             {Object.values(filters).filter(Boolean).length > 0 && (
-              <span className="text-[10px] font-bold font-mono bg-blue-600 text-white px-1.5 py-0.5 rounded-full leading-none">
+              <span className="text-[10px] font-bold font-mono bg-red-600 text-white px-1.5 py-0.5 rounded-full leading-none">
                 {Object.values(filters).filter(Boolean).length}
               </span>
             )}
@@ -303,7 +303,7 @@ export default function Home() {
         {done && cars.length > 0 && (
           <div className="mt-10 pt-10" style={{ borderTop: '1px solid var(--border-lo)' }}>
             <div className="text-center mb-8">
-              <p className="text-[11px] uppercase tracking-widest text-blue-500/70 font-semibold font-mono mb-2">
+              <p className="text-[11px] uppercase tracking-widest text-red-500/70 font-semibold font-mono mb-2">
                 Avantazhi ynë
               </p>
               <h2 className="text-2xl font-extrabold tracking-tight" style={{ color: 'var(--text-1)' }}>
@@ -318,11 +318,11 @@ export default function Home() {
                 <div key={title}
                   className="rounded-2xl p-5 transition-all group"
                   style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(59,130,246,0.2)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(220,38,38,0.2)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
                 >
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center mb-3 group-hover:bg-blue-500/15 transition-colors">
-                    <Icon className="w-4 h-4 text-blue-400" />
+                  <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center mb-3 group-hover:bg-red-500/15 transition-colors">
+                    <Icon className="w-4 h-4 text-red-400" />
                   </div>
                   <h3 className="font-bold text-sm mb-1.5" style={{ color: 'var(--text-1)' }}>{title}</h3>
                   <p className="text-xs leading-relaxed" style={{ color: 'var(--text-3)' }}>{desc}</p>
@@ -330,7 +330,7 @@ export default function Home() {
               ))}
             </div>
             <div className="mt-8 text-center">
-              <a href="https://wa.me/38349644168" target="_blank" rel="noopener noreferrer"
+              <a href="https://wa.me/38348407634" target="_blank" rel="noopener noreferrer"
                  className="btn-primary px-8 py-3 text-sm inline-flex items-center gap-2">
                 💬 Na Kontaktoni Tani
               </a>
@@ -344,7 +344,7 @@ export default function Home() {
       <section style={{ borderTop: '1px solid var(--border-lo)', marginTop: '2rem' }}>
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-16 md:py-20">
           <div className="text-center mb-12">
-            <p className="text-[11px] uppercase tracking-widest text-blue-500/70 font-semibold font-mono mb-3">
+            <p className="text-[11px] uppercase tracking-widest text-red-500/70 font-semibold font-mono mb-3">
               Avantazhi ynë
             </p>
             <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight" style={{ color: 'var(--text-1)' }}>
@@ -360,11 +360,11 @@ export default function Home() {
               <div key={title}
                 className="rounded-2xl p-6 transition-all group"
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(59,130,246,0.2)'; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(220,38,38,0.2)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
               >
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4 group-hover:bg-blue-500/15 transition-colors">
-                  <Icon className="w-5 h-5 text-blue-400" />
+                <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center mb-4 group-hover:bg-red-500/15 transition-colors">
+                  <Icon className="w-5 h-5 text-red-400" />
                 </div>
                 <h3 className="font-bold text-sm mb-2" style={{ color: 'var(--text-1)' }}>{title}</h3>
                 <p className="text-xs leading-relaxed" style={{ color: 'var(--text-3)' }}>{desc}</p>
@@ -372,7 +372,7 @@ export default function Home() {
             ))}
           </div>
           <div className="mt-12 text-center">
-            <a href="https://wa.me/38349644168" target="_blank" rel="noopener noreferrer" className="btn-primary px-8 py-3 text-sm inline-flex items-center gap-2">
+            <a href="https://wa.me/38348407634" target="_blank" rel="noopener noreferrer" className="btn-primary px-8 py-3 text-sm inline-flex items-center gap-2">
               Na Kontaktoni Tani
             </a>
             <p className="text-xs mt-3" style={{ color: 'var(--text-4)' }}>Pa asnjë angazhim · Konsultë falas</p>
