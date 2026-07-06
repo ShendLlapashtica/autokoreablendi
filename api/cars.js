@@ -202,10 +202,15 @@ async function attempt(fetchUrl, isWrapped, signal, label, extraHeaders = {}) {
   return data;
 }
 
+// SellType.일반 ("normal sale") excludes 리스/렌트 (lease/rental-transfer)
+// listings — those carry a nominal placeholder Price (their real cost is a
+// monthly payment, tracked in separate MonthLease* fields we don't show),
+// so left in, they look like implausible near-zero-price "deals" and float
+// straight to the top of any price-ascending sort. They're also not
+// something this import business can actually source for a buyer abroad.
 async function runSearch(parts, offset, count, signal, sortKey = 'ModifiedDate') {
-  const filter = parts.length > 0
-    ? `(And.Hidden.N._.${parts.join('._.')}.)`
-    : `(And.Hidden.N.)`;
+  const allParts = ['SellType.일반', ...parts];
+  const filter = `(And.Hidden.N._.${allParts.join('._.')}.)`;
 
   const encarUrl = `https://api.encar.com/search/car/list/general?${new URLSearchParams({
     count: 'true',
