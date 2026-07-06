@@ -65,19 +65,23 @@ export const OPTION_ALB = {
 };
 
 export const COLOR_ALB = {
-  '검은색': 'E zezë', '검정': 'E zezë', '블랙': 'E zezë', Black: 'E zezë',
+  '검은색': 'E zezë', '검정': 'E zezë', '검정색': 'E zezë', '블랙': 'E zezë', Black: 'E zezë',
   '흰색': 'E bardhë', '화이트': 'E bardhë', White: 'E bardhë',
   '은색': 'Argjendtë', '실버': 'Argjendtë', Silver: 'Argjendtë',
-  '회색': 'Gri', '그레이': 'Gri', Gray: 'Gri', Grey: 'Gri',
+  '은회색': 'Gri argjendi', '명은색': 'Argjend i çelur', '은하색': 'Gri metalik',
+  '회색': 'Gri', '쥐색': 'Gri', '그레이': 'Gri', Gray: 'Gri', Grey: 'Gri',
   '빨간색': 'E kuqe', '레드': 'E kuqe', Red: 'E kuqe',
-  '파란색': 'E kaltër', '블루': 'E kaltër', Blue: 'E kaltër',
-  '남색': 'Blu i errët', '네이비': 'Blu i errët', Navy: 'Blu i errët',
-  '금색': 'E artë', '골드': 'E artë', Gold: 'E artë',
-  '갈색': 'Kafe', '브라운': 'Kafe', Brown: 'Kafe',
+  '파란색': 'Blu', '청색': 'Blu', '블루': 'Blu', Blue: 'Blu',
+  '하늘색': 'Blu qielli', '청옥색': 'Blu-jeshile',
+  '남색': 'Blu e errët', '네이비': 'Blu e errët', Navy: 'Blu e errët',
+  '금색': 'E artë', '연금색': 'E artë e çelur', '골드': 'E artë', Gold: 'E artë',
+  '갈색': 'Kafe', '갈대색': 'Bezhë', '브라운': 'Kafe', Brown: 'Kafe',
   '주황색': 'Portokalli', '오렌지': 'Portokalli', Orange: 'Portokalli',
   '노란색': 'E verdhë', Yellow: 'E verdhë',
-  '녹색': 'E gjelbër', Green: 'E gjelbër',
-  '보라색': 'Vjollcë', Purple: 'Vjollcë',
+  '녹색': 'E gjelbër', '담녹색': 'E gjelbër e errët', '연두색': 'E gjelbër e çelur', Green: 'E gjelbër',
+  '보라색': 'Vjollcë', '자주색': 'Vjollcë e kuqe', Purple: 'Vjollcë',
+  '진주색': 'E bardhë sedefi', '분홍색': 'Rozë',
+  '검정투톤': 'E zezë (dy-ngjyrëshe)', '흰색투톤': 'E bardhë (dy-ngjyrëshe)',
 };
 
 export const DAMAGE_CODES = {

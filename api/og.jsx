@@ -24,38 +24,26 @@ export default function handler() {
           position: 'absolute', top: '-120px', right: '-80px',
           width: '500px', height: '500px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,69,0,0.12) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(220,38,38,0.12) 0%, transparent 70%)',
           display: 'flex',
         }} />
         <div style={{
           position: 'absolute', bottom: '-100px', left: '200px',
           width: '400px', height: '400px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,69,0,0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(220,38,38,0.08) 0%, transparent 70%)',
           display: 'flex',
         }} />
 
-        {/* Top: Logo + tagline */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '14px' }}>
-            <span style={{ fontSize: '64px', fontWeight: 900, color: '#1A1A1A', letterSpacing: '-1px' }}>
-              AUTO
-            </span>
-            <span style={{ fontSize: '64px', fontWeight: 900, color: '#FF4500', letterSpacing: '-1px' }}>
-              KOREA
-            </span>
-            <span style={{ fontSize: '64px', fontWeight: 900, color: '#1A1A1A', letterSpacing: '-1px' }}>
-              PARTNER
-            </span>
-          </div>
-
-          {/* Accent line */}
-          <div style={{
-            width: '80px', height: '3px', borderRadius: '2px',
-            background: 'linear-gradient(90deg, #FF7A44, #FF4500)',
-            display: 'flex',
-          }} />
+        {/* Top: the actual logo */}
+        <div style={{ display: 'flex' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://auto-korea-partner.vercel.app/logo.png"
+            width="360"
+            height="165"
+            alt="Auto Korea Partner"
+          />
         </div>
 
         {/* Middle: Main value prop */}
@@ -65,9 +53,9 @@ export default function handler() {
           </div>
           <div style={{ fontSize: '44px', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.5px', display: 'flex', gap: '12px' }}>
             <span style={{ color: '#1A1A1A' }}>për</span>
-            <span style={{ color: '#FF4500' }}>Shqipëri</span>
+            <span style={{ color: '#DC2626' }}>Shqipëri</span>
             <span style={{ color: '#8A8A93' }}>&</span>
-            <span style={{ color: '#FF4500' }}>Kosovë</span>
+            <span style={{ color: '#DC2626' }}>Kosovë</span>
           </div>
           <div style={{ fontSize: '22px', color: '#52525B', marginTop: '4px', fontWeight: 400 }}>
             🇰🇷 → 🇦🇱 🇽🇰  ·  Çmim all-in · Inspektim Encar · Dorëzim 30–45 ditë
@@ -81,7 +69,7 @@ export default function handler() {
             <span style={{ fontSize: '16px', color: '#52525B', fontWeight: 500 }}>listëzime live · drejtpërdrejt nga Encar</span>
           </div>
           <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-            <span style={{ fontSize: '18px', color: '#52525B', fontWeight: 600 }}>auto-vg.vercel.app</span>
+            <span style={{ fontSize: '18px', color: '#52525B', fontWeight: 600 }}>auto-korea-partner.vercel.app</span>
             <span style={{ fontSize: '14px', color: '#8A8A93', fontWeight: 400 }}>+383 48 407 634</span>
           </div>
         </div>

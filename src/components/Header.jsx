@@ -105,7 +105,7 @@ export default function Header() {
                 onClick={() => setCountry('AL')}
                 title="Shqipëri – çmim Durrës"
                 className={`px-2.5 py-1.5 text-base leading-none transition-all
-                  ${country === 'AL' ? 'bg-red-600 shadow-[0_0_0_1px_rgba(255,69,0,0.4)]' : 'hover:bg-card2'}`}
+                  ${country === 'AL' ? 'bg-red-600 shadow-[0_0_0_1px_rgba(220,38,38,0.4)]' : 'hover:bg-card2'}`}
               >
                 🇦🇱
               </button>
@@ -113,7 +113,7 @@ export default function Header() {
                 onClick={() => setCountry('XK')}
                 title="Kosovë – çmim Prishtinë"
                 className={`px-2.5 py-1.5 text-base leading-none transition-all
-                  ${country === 'XK' ? 'bg-red-600 shadow-[0_0_0_1px_rgba(255,69,0,0.4)]' : 'hover:bg-card2'}`}
+                  ${country === 'XK' ? 'bg-red-600 shadow-[0_0_0_1px_rgba(220,38,38,0.4)]' : 'hover:bg-card2'}`}
               >
                 🇽🇰
               </button>
@@ -142,9 +142,9 @@ export default function Header() {
                 <X className="w-5 h-5" style={{ color: 'var(--text-1)' }} />
               ) : (
                 <div className="flex flex-col justify-center gap-[6px]">
-                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#FF7A44,#FF4500)' }} />
-                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#FF6A2C,#FF4500)' }} />
-                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#FF4500,#C23400)' }} />
+                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#F87171,#DC2626)' }} />
+                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#EF4444,#DC2626)' }} />
+                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#DC2626,#991B1B)' }} />
                 </div>
               )}
             </button>

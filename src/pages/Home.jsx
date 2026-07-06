@@ -5,7 +5,11 @@ import CarCard from '../components/CarCard.jsx';
 import Filters from '../components/Filters.jsx';
 
 const PAGE_SIZE = 24;
-const EMPTY_FILTERS = { manufacturer: '', model: '', fuel: '', yearFrom: '', yearTo: '', mileageTo: '', priceFrom: '', priceTo: '' };
+const EMPTY_FILTERS = {
+  manufacturer: '', model: '', fuel: '', transmission: '', color: '',
+  yearFrom: '', yearTo: '', mileageTo: '', priceFrom: '', priceTo: '',
+  sort: 'priceAsc',
+};
 
 const WHY_US = [
   { icon: BadgeCheck,     title: 'Vetëm Makina të Verifikuara', desc: 'Çdo makinë ka raport inspektimi nga Encar — histori dëmtimesh, numër pronarësh dhe aksidente.' },
@@ -21,11 +25,14 @@ function filtersFromParams(params) {
     manufacturer: params.get('brand')    || '',
     model:        params.get('model')    || '',
     fuel:         params.get('fuel')     || '',
+    transmission: params.get('transmission') || '',
+    color:        params.get('color')    || '',
     yearFrom:     params.get('yearFrom') || '',
     yearTo:       params.get('yearTo')   || '',
     mileageTo:    params.get('kmMax')    || '',
     priceFrom:    params.get('priceFrom') || '',
     priceTo:      params.get('priceTo')   || '',
+    sort:         params.get('sort')     || 'priceAsc',
   };
 }
 
@@ -35,11 +42,14 @@ function paramsFromFilters(f, keyword) {
   if (f.manufacturer) p.brand   = f.manufacturer;
   if (f.model)        p.model   = f.model;
   if (f.fuel)         p.fuel    = f.fuel;
+  if (f.transmission) p.transmission = f.transmission;
+  if (f.color)        p.color   = f.color;
   if (f.yearFrom)     p.yearFrom = f.yearFrom;
   if (f.yearTo)       p.yearTo   = f.yearTo;
   if (f.mileageTo)    p.kmMax    = f.mileageTo;
   if (f.priceFrom)    p.priceFrom = f.priceFrom;
   if (f.priceTo)      p.priceTo   = f.priceTo;
+  if (f.sort)         p.sort     = f.sort;
   return p;
 }
 
@@ -109,12 +119,15 @@ export default function Home() {
         if (flt.manufacturer) params.set('manufacturer', flt.manufacturer);
         if (flt.model)        params.set('model', flt.model);
       }
-      if (flt.fuel)      params.set('fuel', flt.fuel);
+      if (flt.fuel)         params.set('fuel', flt.fuel);
+      if (flt.transmission) params.set('transmission', flt.transmission);
+      if (flt.color)        params.set('color', flt.color);
       if (flt.yearFrom)  params.set('yearFrom', flt.yearFrom);
       if (flt.yearTo)    params.set('yearTo', flt.yearTo);
       if (flt.mileageTo) params.set('mileageTo', flt.mileageTo);
       if (flt.priceFrom) params.set('priceFrom', flt.priceFrom);
       if (flt.priceTo)   params.set('priceTo', flt.priceTo);
+      if (flt.sort)      params.set('sort', flt.sort);
 
       const r    = await fetch(`/api/cars?${params}`);
       const data = await r.json();
@@ -216,6 +229,23 @@ export default function Home() {
               <p className="text-sm md:text-base mt-3 text-gray-300 max-w-md">Çmimet përfshijnë transport deri në port · all-in</p>
             </>
           )}
+        </div>
+      </div>
+
+      {/* Compact why-us trust strip — quick reassurance right below the hero;
+          the full "Why choose us" section still lives further down the page. */}
+      <div style={{ borderBottom: '1px solid var(--border-lo)' }}>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex flex-wrap items-center justify-center sm:justify-between gap-x-6 gap-y-2 text-xs sm:text-sm">
+          {[
+            [BadgeCheck,     'Vetëm makina të verifikuara'],
+            [Truck,          'Çmim all-in deri te porti juaj'],
+            [Clock,          'Dorëzim 30–45 ditë'],
+            [Shield,         'Garanci kthimi · zero risk'],
+          ].map(([Icon, text]) => (
+            <span key={text} className="flex items-center gap-1.5 font-medium" style={{ color: 'var(--text-2)' }}>
+              <Icon className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />{text}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -340,7 +370,7 @@ export default function Home() {
                 <div key={title}
                   className="rounded-2xl p-5 transition-all group"
                   style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,69,0,0.25)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(220,38,38,0.25)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
                 >
                   <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center mb-3 group-hover:bg-red-500/15 transition-colors">
@@ -382,7 +412,7 @@ export default function Home() {
               <div key={title}
                 className="rounded-2xl p-6 transition-all group"
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,69,0,0.25)'; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(220,38,38,0.25)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
               >
                 <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center mb-4 group-hover:bg-red-500/15 transition-colors">

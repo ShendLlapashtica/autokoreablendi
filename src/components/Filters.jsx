@@ -12,6 +12,30 @@ const FUELS = [
   { val: 'lpg',      label: 'LPG' },
 ];
 
+const TRANSMISSIONS = [
+  { val: '',           label: 'Transmisioni' },
+  { val: 'automatik',  label: 'Automatik' },
+  { val: 'manual',     label: 'Manual' },
+  { val: 'semiauto',   label: 'Gjysmë-Automatik' },
+  { val: 'cvt',        label: 'CVT' },
+];
+
+const COLORS = [
+  { val: '',          label: 'Ngjyra' },
+  { val: 'ebardhe',   label: 'E bardhë' },
+  { val: 'ezeze',     label: 'E zezë' },
+  { val: 'gri',       label: 'Gri' },
+  { val: 'kalter',    label: 'Blu' },
+  { val: 'argjendte', label: 'Argjendtë' },
+  { val: 'ekuqe',     label: 'E kuqe' },
+];
+
+const SORTS = [
+  { val: 'priceAsc',  label: 'Çmimi: I ulët → I lartë' },
+  { val: 'priceDesc', label: 'Çmimi: I lartë → I ulët' },
+  { val: '',          label: 'Më të fundit' },
+];
+
 const YEARS = Array.from({ length: 21 }, (_, i) => String(2025 - i));
 
 const KM_MAX = [
@@ -24,7 +48,11 @@ const KM_MAX = [
 
 const PRICES = [5000, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 100000];
 
-const EMPTY = { manufacturer: '', model: '', fuel: '', yearFrom: '', yearTo: '', mileageTo: '', priceFrom: '', priceTo: '' };
+const EMPTY = {
+  manufacturer: '', model: '', fuel: '', transmission: '', color: '',
+  yearFrom: '', yearTo: '', mileageTo: '', priceFrom: '', priceTo: '',
+  sort: 'priceAsc',
+};
 
 function Sel({ label, value, onChange, disabled, children }) {
   const active = !!value;
@@ -40,14 +68,14 @@ function Sel({ label, value, onChange, disabled, children }) {
           disabled={disabled}
           className="pr-8 text-sm font-semibold appearance-none w-full rounded-lg px-3.5 py-3 cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none"
           style={{
-            background: active ? 'rgba(255,69,0,0.08)' : 'var(--bg-card)',
-            border: `1.5px solid ${active ? 'rgba(255,69,0,0.4)' : 'var(--border)'}`,
-            color: active ? '#E63E00' : 'var(--text-1)',
+            background: active ? 'rgba(220,38,38,0.08)' : 'var(--bg-card)',
+            border: `1.5px solid ${active ? 'rgba(220,38,38,0.4)' : 'var(--border)'}`,
+            color: active ? '#DC2626' : 'var(--text-1)',
           }}
         >
           {children}
         </select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: active ? '#E63E00' : 'var(--text-3)' }} />
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: active ? '#DC2626' : 'var(--text-3)' }} />
       </div>
     </div>
   );
@@ -72,12 +100,14 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
       return next;
     });
   }
-  const activeCount = Object.values(filters).filter(Boolean).length;
+  // `sort` always carries a value (defaults to price-ascending) so it isn't
+  // counted as an active "filter" the way the rest of these narrow results.
+  const activeCount = Object.entries(filters).filter(([k, v]) => k !== 'sort' && Boolean(v)).length;
   const hasFilters  = activeCount > 0;
   const models      = MODELS_BY_BRAND[filters.manufacturer] || [];
 
   const filterContent = (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
       <Sel label="Prodhuesi" value={filters.manufacturer} onChange={set('manufacturer')}>
         <option value="">Të gjithë</option>
         {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
@@ -88,6 +118,12 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
       </Sel>
       <Sel label="Karburanti" value={filters.fuel} onChange={set('fuel')}>
         {FUELS.map(f => <option key={f.val} value={f.val}>{f.label === 'Karburant' ? 'Të gjitha' : f.label}</option>)}
+      </Sel>
+      <Sel label="Transmisioni" value={filters.transmission} onChange={set('transmission')}>
+        {TRANSMISSIONS.map(t => <option key={t.val} value={t.val}>{t.label === 'Transmisioni' ? 'Të gjitha' : t.label}</option>)}
+      </Sel>
+      <Sel label="Ngjyra" value={filters.color} onChange={set('color')}>
+        {COLORS.map(c => <option key={c.val} value={c.val}>{c.label === 'Ngjyra' ? 'Të gjitha' : c.label}</option>)}
       </Sel>
       <Sel label="Viti nga" value={filters.yearFrom} onChange={set('yearFrom')}>
         <option value="">Çdo vit</option>
@@ -108,15 +144,18 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
         <option value="">Pa limit</option>
         {PRICES.map(p => <option key={p} value={p}>{p.toLocaleString('de-DE')} €</option>)}
       </Sel>
+      <Sel label="Rendit sipas" value={filters.sort} onChange={set('sort')}>
+        {SORTS.map(s => <option key={s.val} value={s.val}>{s.label}</option>)}
+      </Sel>
       {hasFilters ? (
         <div className="flex flex-col gap-1.5">
           <label className="text-[10px] invisible">x</label>
           <button
             onClick={() => { onChange(EMPTY); close(); }}
             className="flex items-center justify-center gap-1.5 py-3 text-sm font-semibold rounded-lg transition-all"
-            style={{ background: 'rgba(255,69,0,0.08)', border: '1.5px solid rgba(255,69,0,0.3)', color: '#E63E00' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,69,0,0.15)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,69,0,0.08)'; }}
+            style={{ background: 'rgba(220,38,38,0.08)', border: '1.5px solid rgba(220,38,38,0.3)', color: '#DC2626' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.15)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.08)'; }}
           >
             <RotateCcw className="w-3.5 h-3.5" />Pastro
           </button>
@@ -139,7 +178,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.manufacturer} onChange={e => set('manufacturer')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.manufacturer ? 'rgba(255,69,0,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.manufacturer ? 'rgba(255,69,0,0.3)' : 'var(--border)'}`, color: filters.manufacturer ? '#E63E00' : 'var(--text-3)' }}>
+                    style={{ background: filters.manufacturer ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.manufacturer ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.manufacturer ? '#DC2626' : 'var(--text-3)' }}>
               <option value="">Prodhuesi</option>
               {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
@@ -151,7 +190,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
             <select value={filters.model} onChange={e => set('model')(e.target.value)}
                     disabled={!filters.manufacturer}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium disabled:opacity-40"
-                    style={{ background: filters.model ? 'rgba(255,69,0,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.model ? 'rgba(255,69,0,0.3)' : 'var(--border)'}`, color: filters.model ? '#E63E00' : 'var(--text-3)' }}>
+                    style={{ background: filters.model ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.model ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.model ? '#DC2626' : 'var(--text-3)' }}>
               <option value="">Modeli</option>
               {models.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
@@ -162,8 +201,38 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.fuel} onChange={e => set('fuel')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.fuel ? 'rgba(255,69,0,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.fuel ? 'rgba(255,69,0,0.3)' : 'var(--border)'}`, color: filters.fuel ? '#E63E00' : 'var(--text-3)' }}>
+                    style={{ background: filters.fuel ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.fuel ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.fuel ? '#DC2626' : 'var(--text-3)' }}>
               {FUELS.map(f => <option key={f.val} value={f.val}>{f.label}</option>)}
+            </select>
+            <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style={{ color: 'var(--text-4)' }} />
+          </div>
+
+          {/* Transmission */}
+          <div className="relative">
+            <select value={filters.transmission} onChange={e => set('transmission')(e.target.value)}
+                    className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
+                    style={{ background: filters.transmission ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.transmission ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.transmission ? '#DC2626' : 'var(--text-3)' }}>
+              {TRANSMISSIONS.map(t => <option key={t.val} value={t.val}>{t.label}</option>)}
+            </select>
+            <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style={{ color: 'var(--text-4)' }} />
+          </div>
+
+          {/* Color */}
+          <div className="relative">
+            <select value={filters.color} onChange={e => set('color')(e.target.value)}
+                    className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
+                    style={{ background: filters.color ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.color ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.color ? '#DC2626' : 'var(--text-3)' }}>
+              {COLORS.map(c => <option key={c.val} value={c.val}>{c.label}</option>)}
+            </select>
+            <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style={{ color: 'var(--text-4)' }} />
+          </div>
+
+          {/* Sort */}
+          <div className="relative">
+            <select value={filters.sort} onChange={e => set('sort')(e.target.value)}
+                    className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
+                    style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.3)', color: '#DC2626' }}>
+              {SORTS.map(s => <option key={s.val} value={s.val}>{s.label}</option>)}
             </select>
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style={{ color: 'var(--text-4)' }} />
           </div>
@@ -172,7 +241,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.yearFrom} onChange={e => set('yearFrom')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.yearFrom ? 'rgba(255,69,0,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.yearFrom ? 'rgba(255,69,0,0.3)' : 'var(--border)'}`, color: filters.yearFrom ? '#E63E00' : 'var(--text-3)' }}>
+                    style={{ background: filters.yearFrom ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.yearFrom ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.yearFrom ? '#DC2626' : 'var(--text-3)' }}>
               <option value="">Viti nga</option>
               {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
@@ -183,7 +252,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.yearTo} onChange={e => set('yearTo')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.yearTo ? 'rgba(255,69,0,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.yearTo ? 'rgba(255,69,0,0.3)' : 'var(--border)'}`, color: filters.yearTo ? '#E63E00' : 'var(--text-3)' }}>
+                    style={{ background: filters.yearTo ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.yearTo ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.yearTo ? '#DC2626' : 'var(--text-3)' }}>
               <option value="">Viti deri</option>
               {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
@@ -194,7 +263,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.mileageTo} onChange={e => set('mileageTo')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.mileageTo ? 'rgba(255,69,0,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.mileageTo ? 'rgba(255,69,0,0.3)' : 'var(--border)'}`, color: filters.mileageTo ? '#E63E00' : 'var(--text-3)' }}>
+                    style={{ background: filters.mileageTo ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.mileageTo ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.mileageTo ? '#DC2626' : 'var(--text-3)' }}>
               {KM_MAX.map(k => <option key={k.val} value={k.val}>{k.label}</option>)}
             </select>
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style={{ color: 'var(--text-4)' }} />
@@ -204,7 +273,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.priceFrom} onChange={e => set('priceFrom')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.priceFrom ? 'rgba(255,69,0,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.priceFrom ? 'rgba(255,69,0,0.3)' : 'var(--border)'}`, color: filters.priceFrom ? '#E63E00' : 'var(--text-3)' }}>
+                    style={{ background: filters.priceFrom ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.priceFrom ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.priceFrom ? '#DC2626' : 'var(--text-3)' }}>
               <option value="">Çmimi nga</option>
               {PRICES.map(p => <option key={p} value={p}>{p.toLocaleString('de-DE')} €</option>)}
             </select>
@@ -215,7 +284,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.priceTo} onChange={e => set('priceTo')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.priceTo ? 'rgba(255,69,0,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.priceTo ? 'rgba(255,69,0,0.3)' : 'var(--border)'}`, color: filters.priceTo ? '#E63E00' : 'var(--text-3)' }}>
+                    style={{ background: filters.priceTo ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.priceTo ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.priceTo ? '#DC2626' : 'var(--text-3)' }}>
               <option value="">Çmimi deri</option>
               {PRICES.map(p => <option key={p} value={p}>{p.toLocaleString('de-DE')} €</option>)}
             </select>
@@ -226,7 +295,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           {hasFilters && (
             <button onClick={() => onChange(EMPTY)}
                     className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg transition-all shrink-0"
-                    style={{ background: 'rgba(255,69,0,0.08)', border: '1px solid rgba(255,69,0,0.2)', color: '#E63E00' }}>
+                    style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', color: '#DC2626' }}>
               <RotateCcw className="w-2.5 h-2.5" />
             </button>
           )}
@@ -286,8 +355,8 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
               style={{
                 width: '58px',
                 height: '58px',
-                background: 'linear-gradient(145deg,#FF7A44,#FF4500)',
-                boxShadow: '0 8px 24px rgba(255,69,0,0.4), 0 2px 8px rgba(0,0,0,0.15)',
+                background: 'linear-gradient(145deg,#EF4444,#B91C1C)',
+                boxShadow: '0 8px 24px rgba(220,38,38,0.4), 0 2px 8px rgba(0,0,0,0.15)',
               }}
             >
               <SlidersHorizontal className="w-6 h-6 text-white" />

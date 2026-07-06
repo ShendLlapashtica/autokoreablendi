@@ -42,7 +42,7 @@ export default function CarCard({ car }) {
       state={{ car }}
       className="group flex flex-col rounded-lg overflow-hidden transition-all duration-200 hover:-translate-y-0.5 glass-card"
       style={{ boxShadow: '0 4px 6px rgba(0,0,0,0.05)', borderColor: 'var(--border)' }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,69,0,0.35)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(255,69,0,0.12)'; }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(220,38,38,0.35)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(220,38,38,0.12)'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)'; }}
     >
       {/* Photo */}
@@ -134,7 +134,7 @@ export default function CarCard({ car }) {
           )}
         </div>
 
-        <div style={{ background: 'linear-gradient(90deg, transparent, rgba(255,69,0,0.3), transparent)', height: '1px' }} />
+        <div style={{ background: 'linear-gradient(90deg, transparent, rgba(220,38,38,0.3), transparent)', height: '1px' }} />
 
         {/* Price */}
         <div className="flex items-end justify-between mt-auto">

@@ -87,6 +87,29 @@ const FUEL_MAP = {
   lpg:      'LPG',
 };
 
+// Albanian/English transmission → Korean Encar Transmission (verified live
+// facet values: 오토/수동/세미오토/CVT — 기타 "other" omitted, negligible count)
+const TRANSMISSION_MAP = {
+  automatic: '오토', automatik: '오토', auto: '오토',
+  manual:    '수동',
+  semiauto:  '세미오토', 'semi-automatik': '세미오토', semiautomatik: '세미오토',
+  cvt:       'CVT',
+};
+
+// Albanian/English color → Korean Encar Color (verified live facet values,
+// top ~9 by listing count covers ~96% of all live inventory)
+const COLOR_MAP = {
+  white: '흰색', ebardhe: '흰색',
+  black: '검정색', ezeze: '검정색',
+  gray: '쥐색', grey: '쥐색', gri: '쥐색',
+  blue: '청색', kalter: '청색',
+  silver: '은색', argjendte: '은색',
+  silvergray: '은회색',
+  pearl: '진주색',
+  red: '빨간색', ekuqe: '빨간색',
+  skyblue: '하늘색',
+};
+
 // Case-insensitive dictionary lookup — returns the matched dictionary key, or null.
 function findKey(dict, val) {
   if (Object.prototype.hasOwnProperty.call(dict, val)) return val;
@@ -179,7 +202,7 @@ async function attempt(fetchUrl, isWrapped, signal, label, extraHeaders = {}) {
   return data;
 }
 
-async function runSearch(parts, offset, count, signal) {
+async function runSearch(parts, offset, count, signal, sortKey = 'ModifiedDate') {
   const filter = parts.length > 0
     ? `(And.Hidden.N._.${parts.join('._.')}.)`
     : `(And.Hidden.N.)`;
@@ -187,7 +210,7 @@ async function runSearch(parts, offset, count, signal) {
   const encarUrl = `https://api.encar.com/search/car/list/general?${new URLSearchParams({
     count: 'true',
     q:     filter,
-    sr:    `|ModifiedDate|${offset}|${count}`,
+    sr:    `|${sortKey}|${offset}|${count}`,
     inav:  '|Metadata|Sort',
   })}`;
   const enc = encodeURIComponent(encarUrl);
@@ -226,9 +249,9 @@ function matchScore(car, terms) {
   return score;
 }
 
-async function substringSearch(keyword, manufacturer, offset, count, signal, extraParts = []) {
+async function substringSearch(keyword, manufacturer, offset, count, signal, extraParts = [], sortKey = 'ModifiedDate') {
   const scanParts = [...(manufacturer ? [`Manufacturer.${manufacturer}`] : []), ...extraParts];
-  const broad      = await runSearch(scanParts, 0, 500, signal);
+  const broad      = await runSearch(scanParts, 0, 500, signal, sortKey);
 
   // Split with the same rule matchScore uses on car fields (tokenize), so a
   // hyphenated term like "C-CLASS" lines up with Encar's "C-클래스" split
@@ -244,6 +267,11 @@ async function substringSearch(keyword, manufacturer, offset, count, signal, ext
     .filter(x => x.score > 0)
     .sort((a, b) => b.score - a.score)
     .map(x => x.car);
+
+  // A price sort was explicitly requested — it should win over relevance
+  // ranking for the matched set, same as it does on the plain-filter path.
+  if (sortKey === 'PriceAsc')  matched.sort((a, b) => (a.Price ?? 0) - (b.Price ?? 0));
+  if (sortKey === 'PriceDesc') matched.sort((a, b) => (b.Price ?? 0) - (a.Price ?? 0));
 
   return {
     Count:         matched.length,
@@ -289,12 +317,24 @@ export default async function handler(req, res) {
     }
   }
 
-  // Filters shared by every attempt (fuel/year/mileage/price)
+  const sortKey = q.sort === 'priceAsc' ? 'PriceAsc' : q.sort === 'priceDesc' ? 'PriceDesc' : 'ModifiedDate';
+
+  // Filters shared by every attempt (fuel/year/mileage/price/transmission/color)
   const commonParts = [];
 
   if (q.fuel) {
     const mapped = FUEL_MAP[q.fuel.toLowerCase().trim()] ?? q.fuel;
     commonParts.push(`FuelType.${mapped}`);
+  }
+
+  if (q.transmission) {
+    const mapped = TRANSMISSION_MAP[q.transmission.toLowerCase().trim()] ?? q.transmission;
+    commonParts.push(`Transmission.${mapped}`);
+  }
+
+  if (q.color) {
+    const mapped = COLOR_MAP[q.color.toLowerCase().trim()] ?? q.color;
+    commonParts.push(`Color.${mapped}`);
   }
 
   if (q.yearFrom || q.yearTo) {
@@ -325,13 +365,13 @@ export default async function handler(req, res) {
   const timer = setTimeout(() => ctrl.abort(), 9000);
 
   try {
-    let data = await runSearch([...identityParts, ...commonParts], offset, count, ctrl.signal);
+    let data = await runSearch([...identityParts, ...commonParts], offset, count, ctrl.signal, sortKey);
 
     // A non-exact model was left out of the facet filter above — narrow the
     // (brand-wide) results down by substring-matching it now, rather than
     // waiting for a hard zero-result before trying.
     if (model && !modelExact) {
-      const narrowed = await substringSearch(remainder, manufacturer, offset, count, ctrl.signal, commonParts);
+      const narrowed = await substringSearch(remainder, manufacturer, offset, count, ctrl.signal, commonParts, sortKey);
       if (narrowed.SearchResults.length > 0) data = narrowed;
     }
 
@@ -346,16 +386,16 @@ export default async function handler(req, res) {
     //      a hard empty state.
     if (data.SearchResults.length === 0 && (manufacturer || model)) {
       if (manufacturer && remainder) {
-        data = await substringSearch(remainder, manufacturer, offset, count, ctrl.signal, commonParts);
+        data = await substringSearch(remainder, manufacturer, offset, count, ctrl.signal, commonParts, sortKey);
       }
       if (data.SearchResults.length === 0 && manufacturer) {
-        data = await runSearch([`Manufacturer.${manufacturer}`, ...commonParts], offset, count, ctrl.signal);
+        data = await runSearch([`Manufacturer.${manufacturer}`, ...commonParts], offset, count, ctrl.signal, sortKey);
       }
       if (data.SearchResults.length === 0 && !manufacturer) {
-        data = await substringSearch(rawKeyword, null, offset, count, ctrl.signal, commonParts);
+        data = await substringSearch(rawKeyword, null, offset, count, ctrl.signal, commonParts, sortKey);
       }
       if (data.SearchResults.length === 0) {
-        data = await runSearch(commonParts, offset, count, ctrl.signal);
+        data = await runSearch(commonParts, offset, count, ctrl.signal, sortKey);
       }
     }
 
