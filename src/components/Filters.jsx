@@ -144,9 +144,6 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
         <option value="">Pa limit</option>
         {PRICES.map(p => <option key={p} value={p}>{p.toLocaleString('de-DE')} €</option>)}
       </Sel>
-      <Sel label="Rendit sipas" value={filters.sort} onChange={set('sort')}>
-        {SORTS.map(s => <option key={s.val} value={s.val}>{s.label}</option>)}
-      </Sel>
       {hasFilters ? (
         <div className="flex flex-col gap-1.5">
           <label className="text-[10px] invisible">x</label>
@@ -223,16 +220,6 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
                     style={{ background: filters.color ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.color ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.color ? '#DC2626' : 'var(--text-3)' }}>
               {COLORS.map(c => <option key={c.val} value={c.val}>{c.label}</option>)}
-            </select>
-            <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style={{ color: 'var(--text-4)' }} />
-          </div>
-
-          {/* Sort */}
-          <div className="relative">
-            <select value={filters.sort} onChange={e => set('sort')(e.target.value)}
-                    className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.sort ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.sort ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.sort ? '#DC2626' : 'var(--text-3)' }}>
-              {SORTS.map(s => <option key={s.val} value={s.val}>{s.label}</option>)}
             </select>
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style={{ color: 'var(--text-4)' }} />
           </div>

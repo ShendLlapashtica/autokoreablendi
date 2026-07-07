@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { carPhotoUrl, hqPhotoUrl, fmtEur, fmtKm, carYear, tr, trCity } from '../lib/utils.js';
+import { carPhotoUrl, allPhotoUrls, fmtEur, fmtKm, carYear, tr, trCity } from '../lib/utils.js';
 import { translateFuel, translateTrans, translateColor } from '../lib/translations.js';
 import { useCountry } from '../contexts/CountryContext.jsx';
 
@@ -16,10 +16,26 @@ const FUEL_COLOR = {
 };
 
 export default function CarCard({ car }) {
-  const baseUrl = carPhotoUrl(car);
-  const [imgSrc, setImgSrc] = useState(() => hqPhotoUrl(baseUrl) || PLACEHOLDER);
-  const [triedBase, setTriedBase] = useState(false);
+  const photos = useMemo(() => {
+    const urls = allPhotoUrls(car);
+    return urls.length > 0 ? urls : (carPhotoUrl(car) ? [carPhotoUrl(car)] : []);
+  }, [car]);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [broken, setBroken] = useState(() => new Set());
   const { priceFor, label } = useCountry();
+
+  // Keep each surviving photo paired with its original index so a broken
+  // image can be marked (and skipped) without losing track of which one it was.
+  const visible = photos.map((url, i) => ({ url, i })).filter(p => !broken.has(p.i));
+  const current = visible.length > 0 ? visible[Math.min(activeIdx, visible.length - 1)] : null;
+  const shown   = current ? current.url : PLACEHOLDER;
+
+  function scrub(e) {
+    if (visible.length <= 1) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = (e.clientX - rect.left) / rect.width;
+    setActiveIdx(Math.min(visible.length - 1, Math.max(0, Math.floor(ratio * visible.length))));
+  }
 
   const year   = carYear(car);
   const price  = priceFor(car.Price);
@@ -45,19 +61,39 @@ export default function CarCard({ car }) {
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(220,38,38,0.35)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(220,38,38,0.12)'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)'; }}
     >
-      {/* Photo */}
-      <div className="relative overflow-hidden flex-shrink-0" style={{ aspectRatio: '16/10', background: 'var(--bg-card2)' }}>
+      {/* Photo — hover-scrub through every available angle, like Airbnb/Zillow cards */}
+      <div
+        className="relative overflow-hidden flex-shrink-0"
+        style={{ aspectRatio: '16/10', background: 'var(--bg-card2)' }}
+        onMouseMove={scrub}
+        onMouseLeave={() => setActiveIdx(0)}
+      >
         <img
-          src={imgSrc}
+          src={shown}
           alt={`${maker} ${model}`}
           loading="lazy"
           decoding="async"
           className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
           onError={() => {
-            if (!triedBase && baseUrl) { setTriedBase(true); setImgSrc(baseUrl); }
-            else setImgSrc(PLACEHOLDER);
+            if (current) setBroken(prev => new Set(prev).add(current.i));
           }}
         />
+        {visible.length > 1 && (
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 flex gap-1">
+            {visible.map((p, i) => (
+              <span
+                key={p.i}
+                className="rounded-full transition-all"
+                style={{
+                  width: i === activeIdx ? '14px' : '4px',
+                  height: '4px',
+                  background: i === activeIdx ? '#fff' : 'rgba(255,255,255,0.5)',
+                  boxShadow: '0 0 2px rgba(0,0,0,0.5)',
+                }}
+              />
+            ))}
+          </div>
+        )}
         {conditions.length > 0 && (
           <div className="absolute bottom-2 left-2 flex gap-1">
             {conditions.map(c => (

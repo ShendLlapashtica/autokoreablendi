@@ -1,6 +1,21 @@
 // Encar reverse-engineering proxy — uncapped, multi-fallback
 // Supports full pagination over 200k+ listings
 
+// Encar's Price field is in 만원 (manwon = 10,000 KRW) units, but the
+// frontend's price filter dropdowns are labeled in EUR — matches
+// src/lib/utils.js's KRW_TO_EUR (0.00067) * 10,000 = 6.7 EUR per manwon.
+const EUR_PER_MANWON = 6.7;
+
+// A hard floor below the frontend's own filter range: 200만원 (~€1,340 base)
+// verified live to cut only ~0.3% of normal-sale+inspected listings (638 of
+// 213,055) — just enough to drop near-worthless high-mileage relics (e.g. a
+// verified real 45만원/~€300 Jeep) without touching genuinely affordable cars.
+const MIN_PRICE_MANWON = 200;
+
+function eurToManwon(eur) {
+  return Math.round(Number(eur) / EUR_PER_MANWON);
+}
+
 const BROWSER_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   'Accept': 'application/json, text/javascript, */*; q=0.01',
@@ -208,8 +223,13 @@ async function attempt(fetchUrl, isWrapped, signal, label, extraHeaders = {}) {
 // so left in, they look like implausible near-zero-price "deals" and float
 // straight to the top of any price-ascending sort. They're also not
 // something this import business can actually source for a buyer abroad.
+//
+// Condition.Inspection requires Encar's own performance/inspection record
+// (성능기록부) to be on file — verified live at 204,156 of 213,055 normal-sale
+// listings (96%), matching this site's own "every car is inspected" claim,
+// so this only drops the small uninspected/unverifiable minority.
 async function runSearch(parts, offset, count, signal, sortKey = 'ModifiedDate') {
-  const allParts = ['SellType.일반', ...parts];
+  const allParts = ['SellType.일반', 'Condition.Inspection', ...parts];
   const filter = `(And.Hidden.N._.${allParts.join('._.')}.)`;
 
   const encarUrl = `https://api.encar.com/search/car/list/general?${new URLSearchParams({
@@ -353,9 +373,11 @@ export default async function handler(req, res) {
     commonParts.push(`Mileage.range(${q.mileageFrom ?? 0}..${q.mileageTo ?? 9999999})`);
   }
 
-  if (q.priceFrom || q.priceTo) {
-    commonParts.push(`Price.range(${q.priceFrom ?? 0}..${q.priceTo ?? 999999})`);
-  }
+  // Always applied (not just when priceFrom/priceTo are set) so the minimum
+  // floor below takes effect on every default, unfiltered browse too.
+  const priceFromManwon = q.priceFrom ? eurToManwon(q.priceFrom) : 0;
+  const priceToManwon   = q.priceTo   ? eurToManwon(q.priceTo)   : 999999;
+  commonParts.push(`Price.range(${Math.max(MIN_PRICE_MANWON, priceFromManwon)}..${priceToManwon})`);
 
   // Only a confirmed dictionary hit is trustworthy as an *exact* Model facet —
   // Encar stores everything else (series/class/code-style names) with a
