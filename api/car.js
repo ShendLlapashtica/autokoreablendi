@@ -39,7 +39,7 @@ export default async function handler(req, res) {
   // Strategy 2: List search filtered by ID (always works if listing API works)
   const listUrl = `https://api.encar.com/search/car/list/general?${new URLSearchParams({
     count: 'true',
-    q: `(And.Hidden.N._.Carid.${id}.)`,
+    q: `(And.Hidden.N._.CarId.${id}.)`,
     sr: `|ModifiedDate|0|1`,
     inav: '|Metadata|Sort',
   })}`;
@@ -65,6 +65,20 @@ export default async function handler(req, res) {
         return car;
       }),
     ]);
+
+    // Best-effort: the view/list endpoints above only carry a handful of
+    // photos each. Encar's readside API exposes the full gallery (often
+    // 20+ shots) — merge it in when available, but a failure here (it's
+    // a separate, less reliable endpoint) must never break the response.
+    try {
+      const full = await tryFetch(`https://api.encar.com/v1/readside/vehicle/${id}`, ctrl.signal);
+      if (Array.isArray(full?.photos) && full.photos.length > 0) {
+        data.Photos = full.photos
+          .slice()
+          .sort((a, b) => parseInt(a.code) - parseInt(b.code))
+          .map(p => ({ location: p.path }));
+      }
+    } catch {}
 
     clearTimeout(timer);
     return res.status(200).json(data);

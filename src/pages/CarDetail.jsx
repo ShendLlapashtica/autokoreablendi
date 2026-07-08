@@ -69,7 +69,12 @@ export default function CarDetail() {
         if (data.error) throw new Error(data.error);
         setCar(data.SearchResults?.[0] || data);
       })
-      .catch(e => { if (!cancelled) setError(e.message); })
+      .catch(e => {
+        // A failed background refresh must never blank out a page that's
+        // already rendering fine from the router state a card passed along —
+        // only surface the error if we had nothing to show in the first place.
+        if (!cancelled && !state?.car) setError(e.message);
+      })
       .finally(() => { if (!cancelled) setLoadingCar(false); });
     return () => { cancelled = true; };
   }, [id]);
