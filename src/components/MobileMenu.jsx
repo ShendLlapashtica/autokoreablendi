@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { X, Calculator, ChevronRight } from 'lucide-react';
 import { useEffect } from 'react';
+import { BRAND, waLink } from '../lib/brand.js';
 
 export default function MobileMenu({ onClose, onOpenCalc, country, setCountry }) {
   useEffect(() => {
@@ -15,7 +16,7 @@ export default function MobileMenu({ onClose, onOpenCalc, country, setCountry })
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
-          <img src="/logo.png" alt="Auto Korea Partner" className="h-9 w-auto" />
+          <img src={BRAND.logoPath} alt={BRAND.name} className="h-9 w-auto" />
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full btn-ghost p-0" style={{ color: 'var(--text-1)' }}>
             <X className="w-4 h-4" />
           </button>
@@ -61,7 +62,7 @@ export default function MobileMenu({ onClose, onOpenCalc, country, setCountry })
         {/* Why us */}
         <div className="flex-1 px-4 py-3" style={{ borderTop: '1px solid var(--border-lo)' }}>
           <p className="text-[10px] uppercase tracking-widest mb-3 font-mono font-semibold" style={{ color: 'var(--text-3)' }}>
-            Pse Auto Korea Partner?
+            Pse {BRAND.name}?
           </p>
           <div className="space-y-2.5">
             {[
@@ -81,17 +82,17 @@ export default function MobileMenu({ onClose, onOpenCalc, country, setCountry })
 
         {/* Footer CTA */}
         <div className="p-4 space-y-2" style={{ borderTop: '1px solid var(--border)' }}>
-          <a href="https://wa.me/38348407634" target="_blank" rel="noopener noreferrer"
+          <a href={waLink()} target="_blank" rel="noopener noreferrer"
              className="w-full flex items-center justify-center gap-2 py-3 rounded-lg font-bold text-white text-sm transition-all hover:brightness-110"
              style={{ background: 'linear-gradient(135deg,#25d366,#128c7e)' }}
              onClick={onClose}>
-            💬 WhatsApp · 048 407 634
+            💬 WhatsApp · {BRAND.phone.primaryDisp}
           </a>
-          <a href="tel:+38348407634"
+          <a href={`tel:${BRAND.phone.primary.replace(/\s+/g, '')}`}
              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold btn-ghost"
              style={{ color: 'var(--text-1)' }}
              onClick={onClose}>
-            📞 048 407 634
+            📞 {BRAND.phone.primaryDisp}
           </a>
         </div>
       </div>

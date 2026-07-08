@@ -68,14 +68,14 @@ function Sel({ label, value, onChange, disabled, children }) {
           disabled={disabled}
           className="pr-8 text-sm font-semibold appearance-none w-full rounded-lg px-3.5 py-3 cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none"
           style={{
-            background: active ? 'rgba(220,38,38,0.08)' : 'var(--bg-card)',
-            border: `1.5px solid ${active ? 'rgba(220,38,38,0.4)' : 'var(--border)'}`,
-            color: active ? '#DC2626' : 'var(--text-1)',
+            background: active ? 'rgba(196,34,46,0.08)' : 'var(--bg-card)',
+            border: `1.5px solid ${active ? 'rgba(196,34,46,0.4)' : 'var(--border)'}`,
+            color: active ? '#C4222E' : 'var(--text-1)',
           }}
         >
           {children}
         </select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: active ? '#DC2626' : 'var(--text-3)' }} />
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: active ? '#C4222E' : 'var(--text-3)' }} />
       </div>
     </div>
   );
@@ -150,9 +150,9 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <button
             onClick={() => { onChange(EMPTY); close(); }}
             className="flex items-center justify-center gap-1.5 py-3 text-sm font-semibold rounded-lg transition-all"
-            style={{ background: 'rgba(220,38,38,0.08)', border: '1.5px solid rgba(220,38,38,0.3)', color: '#DC2626' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.15)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.08)'; }}
+            style={{ background: 'rgba(196,34,46,0.08)', border: '1.5px solid rgba(196,34,46,0.3)', color: '#C4222E' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(196,34,46,0.15)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(196,34,46,0.08)'; }}
           >
             <RotateCcw className="w-3.5 h-3.5" />Pastro
           </button>
@@ -175,7 +175,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.manufacturer} onChange={e => set('manufacturer')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.manufacturer ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.manufacturer ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.manufacturer ? '#DC2626' : 'var(--text-3)' }}>
+                    style={{ background: filters.manufacturer ? 'rgba(196,34,46,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.manufacturer ? 'rgba(196,34,46,0.3)' : 'var(--border)'}`, color: filters.manufacturer ? '#C4222E' : 'var(--text-3)' }}>
               <option value="">Prodhuesi</option>
               {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
@@ -187,7 +187,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
             <select value={filters.model} onChange={e => set('model')(e.target.value)}
                     disabled={!filters.manufacturer}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium disabled:opacity-40"
-                    style={{ background: filters.model ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.model ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.model ? '#DC2626' : 'var(--text-3)' }}>
+                    style={{ background: filters.model ? 'rgba(196,34,46,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.model ? 'rgba(196,34,46,0.3)' : 'var(--border)'}`, color: filters.model ? '#C4222E' : 'var(--text-3)' }}>
               <option value="">Modeli</option>
               {models.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
@@ -198,7 +198,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.fuel} onChange={e => set('fuel')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.fuel ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.fuel ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.fuel ? '#DC2626' : 'var(--text-3)' }}>
+                    style={{ background: filters.fuel ? 'rgba(196,34,46,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.fuel ? 'rgba(196,34,46,0.3)' : 'var(--border)'}`, color: filters.fuel ? '#C4222E' : 'var(--text-3)' }}>
               {FUELS.map(f => <option key={f.val} value={f.val}>{f.label}</option>)}
             </select>
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style={{ color: 'var(--text-4)' }} />
@@ -208,7 +208,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.transmission} onChange={e => set('transmission')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.transmission ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.transmission ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.transmission ? '#DC2626' : 'var(--text-3)' }}>
+                    style={{ background: filters.transmission ? 'rgba(196,34,46,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.transmission ? 'rgba(196,34,46,0.3)' : 'var(--border)'}`, color: filters.transmission ? '#C4222E' : 'var(--text-3)' }}>
               {TRANSMISSIONS.map(t => <option key={t.val} value={t.val}>{t.label}</option>)}
             </select>
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style={{ color: 'var(--text-4)' }} />
@@ -218,7 +218,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.color} onChange={e => set('color')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.color ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.color ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.color ? '#DC2626' : 'var(--text-3)' }}>
+                    style={{ background: filters.color ? 'rgba(196,34,46,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.color ? 'rgba(196,34,46,0.3)' : 'var(--border)'}`, color: filters.color ? '#C4222E' : 'var(--text-3)' }}>
               {COLORS.map(c => <option key={c.val} value={c.val}>{c.label}</option>)}
             </select>
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style={{ color: 'var(--text-4)' }} />
@@ -228,7 +228,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.yearFrom} onChange={e => set('yearFrom')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.yearFrom ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.yearFrom ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.yearFrom ? '#DC2626' : 'var(--text-3)' }}>
+                    style={{ background: filters.yearFrom ? 'rgba(196,34,46,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.yearFrom ? 'rgba(196,34,46,0.3)' : 'var(--border)'}`, color: filters.yearFrom ? '#C4222E' : 'var(--text-3)' }}>
               <option value="">Viti nga</option>
               {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
@@ -239,7 +239,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.yearTo} onChange={e => set('yearTo')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.yearTo ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.yearTo ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.yearTo ? '#DC2626' : 'var(--text-3)' }}>
+                    style={{ background: filters.yearTo ? 'rgba(196,34,46,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.yearTo ? 'rgba(196,34,46,0.3)' : 'var(--border)'}`, color: filters.yearTo ? '#C4222E' : 'var(--text-3)' }}>
               <option value="">Viti deri</option>
               {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
@@ -250,7 +250,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.mileageTo} onChange={e => set('mileageTo')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.mileageTo ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.mileageTo ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.mileageTo ? '#DC2626' : 'var(--text-3)' }}>
+                    style={{ background: filters.mileageTo ? 'rgba(196,34,46,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.mileageTo ? 'rgba(196,34,46,0.3)' : 'var(--border)'}`, color: filters.mileageTo ? '#C4222E' : 'var(--text-3)' }}>
               {KM_MAX.map(k => <option key={k.val} value={k.val}>{k.label}</option>)}
             </select>
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style={{ color: 'var(--text-4)' }} />
@@ -260,7 +260,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.priceFrom} onChange={e => set('priceFrom')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.priceFrom ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.priceFrom ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.priceFrom ? '#DC2626' : 'var(--text-3)' }}>
+                    style={{ background: filters.priceFrom ? 'rgba(196,34,46,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.priceFrom ? 'rgba(196,34,46,0.3)' : 'var(--border)'}`, color: filters.priceFrom ? '#C4222E' : 'var(--text-3)' }}>
               <option value="">Çmimi nga</option>
               {PRICES.map(p => <option key={p} value={p}>{p.toLocaleString('de-DE')} €</option>)}
             </select>
@@ -271,7 +271,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           <div className="relative">
             <select value={filters.priceTo} onChange={e => set('priceTo')(e.target.value)}
                     className="appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ background: filters.priceTo ? 'rgba(220,38,38,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.priceTo ? 'rgba(220,38,38,0.3)' : 'var(--border)'}`, color: filters.priceTo ? '#DC2626' : 'var(--text-3)' }}>
+                    style={{ background: filters.priceTo ? 'rgba(196,34,46,0.08)' : 'var(--bg-input)', border: `1px solid ${filters.priceTo ? 'rgba(196,34,46,0.3)' : 'var(--border)'}`, color: filters.priceTo ? '#C4222E' : 'var(--text-3)' }}>
               <option value="">Çmimi deri</option>
               {PRICES.map(p => <option key={p} value={p}>{p.toLocaleString('de-DE')} €</option>)}
             </select>
@@ -282,7 +282,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           {hasFilters && (
             <button onClick={() => onChange(EMPTY)}
                     className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg transition-all shrink-0"
-                    style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', color: '#DC2626' }}>
+                    style={{ background: 'rgba(196,34,46,0.08)', border: '1px solid rgba(196,34,46,0.2)', color: '#C4222E' }}>
               <RotateCcw className="w-2.5 h-2.5" />
             </button>
           )}
@@ -342,8 +342,8 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
               style={{
                 width: '58px',
                 height: '58px',
-                background: 'linear-gradient(145deg,#EF4444,#B91C1C)',
-                boxShadow: '0 8px 24px rgba(220,38,38,0.4), 0 2px 8px rgba(0,0,0,0.15)',
+                background: 'linear-gradient(145deg,#D63A44,#96181F)',
+                boxShadow: '0 8px 24px rgba(196,34,46,0.4), 0 2px 8px rgba(0,0,0,0.15)',
               }}
             >
               <SlidersHorizontal className="w-6 h-6 text-white" />

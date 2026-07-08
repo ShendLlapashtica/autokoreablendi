@@ -13,11 +13,12 @@ import {
 } from '../lib/utils.js';
 import { translateFuel, translateTrans, translateOption, translateColor } from '../lib/translations.js';
 import { useCountry } from '../contexts/CountryContext.jsx';
+import { BRAND } from '../lib/brand.js';
 
-const WHATSAPP    = '38348407634';
-const PHONE       = '+383 48 407 634';
-const PHONE_DISP  = '048 407 634';
-const EMAIL       = 'shendillapashtica@gmail.com';
+const WHATSAPP    = BRAND.phone.primaryWa;
+const PHONE       = BRAND.phone.primary;
+const PHONE_DISP  = BRAND.phone.primaryDisp;
+const EMAIL       = BRAND.email;
 
 const MONTHS_ALB = ['Jan','Shk','Mar','Pri','Maj','Qer','Kor','Gus','Sht','Tet','Nën','Dhj'];
 
@@ -36,7 +37,7 @@ function Row({ label, value, mono, highlight }) {
     <div className="flex items-start py-2.5" style={{ borderBottom: '1px solid var(--border-lo)' }}>
       <span className="text-xs w-40 flex-shrink-0 pt-0.5" style={{ color: 'var(--text-3)' }}>{label}</span>
       <span className={`text-sm font-medium ${mono ? 'font-mono text-xs' : ''}`}
-        style={{ color: highlight ? '#DC2626' : 'var(--text-2)' }}>
+        style={{ color: highlight ? '#C4222E' : 'var(--text-2)' }}>
         {value}
       </span>
     </div>
@@ -195,7 +196,7 @@ export default function CarDetail() {
                      style={{ background: 'linear-gradient(135deg,#25d366,#128c7e)' }}>
                     <MessageCircle className="w-4 h-4" />WhatsApp
                   </a>
-                  <a href="tel:+38348407634"
+                  <a href={`tel:${PHONE.replace(/\s+/g, '')}`}
                      className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg font-semibold text-sm transition-all btn-ghost">
                     <Phone className="w-4 h-4" />{PHONE_DISP}
                   </a>

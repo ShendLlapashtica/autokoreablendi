@@ -5,6 +5,7 @@ import { useCountry } from '../contexts/CountryContext.jsx';
 import CustomsCalculator from './CustomsCalculator.jsx';
 import MobileMenu from './MobileMenu.jsx';
 import { BRANDS } from '../lib/brandModels.js';
+import { BRAND, waLink } from '../lib/brand.js';
 
 const FUEL_KEYWORDS = {
   'diesel': 'diesel', 'naftë': 'diesel', 'nafta': 'diesel',
@@ -80,11 +81,11 @@ export default function Header() {
 
           {/* Logo */}
           <Link to="/" className="flex items-center group select-none flex-shrink-0 mr-2">
-            <img src="/logo.png" alt="Auto Korea Partner" className="h-11 w-auto" />
+            <img src={BRAND.logoPath} alt={BRAND.name} className="h-11 w-auto" />
           </Link>
 
           {/* Search — desktop */}
-          <form onSubmit={handleSearch} className="hidden sm:flex flex-1 max-w-xs">
+          <form onSubmit={handleSearch} className="hidden sm:flex flex-1 max-w-sm">
             <div className="relative w-full">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm select-none">🔍</span>
               <input
@@ -105,7 +106,7 @@ export default function Header() {
                 onClick={() => setCountry('AL')}
                 title="Shqipëri – çmim Durrës"
                 className={`px-2.5 py-1.5 text-base leading-none transition-all
-                  ${country === 'AL' ? 'bg-red-600 shadow-[0_0_0_1px_rgba(220,38,38,0.4)]' : 'hover:bg-card2'}`}
+                  ${country === 'AL' ? 'bg-red-600 shadow-[0_0_0_1px_rgba(196,34,46,0.4)]' : 'hover:bg-card2'}`}
               >
                 🇦🇱
               </button>
@@ -113,13 +114,13 @@ export default function Header() {
                 onClick={() => setCountry('XK')}
                 title="Kosovë – çmim Prishtinë"
                 className={`px-2.5 py-1.5 text-base leading-none transition-all
-                  ${country === 'XK' ? 'bg-red-600 shadow-[0_0_0_1px_rgba(220,38,38,0.4)]' : 'hover:bg-card2'}`}
+                  ${country === 'XK' ? 'bg-red-600 shadow-[0_0_0_1px_rgba(196,34,46,0.4)]' : 'hover:bg-card2'}`}
               >
                 🇽🇰
               </button>
             </div>
 
-            <a href="https://wa.me/38348407634" target="_blank" rel="noopener noreferrer"
+            <a href={waLink()} target="_blank" rel="noopener noreferrer"
                className="hidden sm:inline-flex btn-primary text-xs py-1.5 px-3">
               WhatsApp
             </a>
@@ -142,9 +143,9 @@ export default function Header() {
                 <X className="w-5 h-5" style={{ color: 'var(--text-1)' }} />
               ) : (
                 <div className="flex flex-col justify-center gap-[6px]">
-                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#F87171,#DC2626)' }} />
-                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#EF4444,#DC2626)' }} />
-                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#DC2626,#991B1B)' }} />
+                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#E2626C,#C4222E)' }} />
+                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#D63A44,#C4222E)' }} />
+                  <span style={{ display:'block', width:'22px', height:'3px', borderRadius:'3px', background:'linear-gradient(90deg,#C4222E,#96181F)' }} />
                 </div>
               )}
             </button>

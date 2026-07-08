@@ -1,8 +1,23 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Shield, Truck, BadgeCheck, Clock, HeartHandshake, Globe, X, SlidersHorizontal } from 'lucide-react';
+import { Shield, Truck, BadgeCheck, Clock, HeartHandshake, Globe, X, SlidersHorizontal, MapPin, Stamp, Gauge, Wallet } from 'lucide-react';
 import CarCard from '../components/CarCard.jsx';
 import Filters from '../components/Filters.jsx';
+import { BRAND, waLink } from '../lib/brand.js';
+
+const INFO_BLOCKS = [
+  { code: 'LOC', icon: MapPin, text: 'Magjistrale Prishtinë–Ferizaj (Gadime)' },
+  { code: 'SVC', icon: Stamp,  text: 'Doganim & Inspektim' },
+  { code: 'LOG', icon: Truck,  text: 'Transport deri në Kosovë' },
+  { code: 'FIN', icon: Wallet, text: 'Pagesa në Kosovë' },
+];
+
+const TRUST_CHECKLIST = [
+  [BadgeCheck, 'Inspektim i plotë në arritje'],
+  [Truck,      'Transport i sigurt deri në Kosovë'],
+  [Gauge,      'Kilometrazh real'],
+  [Shield,     'Mundësi rezervimi me kapar'],
+];
 
 const PAGE_SIZE = 24;
 const EMPTY_FILTERS = {
@@ -227,23 +242,33 @@ export default function Home() {
                 )}
               </h1>
               <p className="text-sm md:text-base mt-3 text-gray-300 max-w-md">Çmimet përfshijnë transport deri në port · all-in</p>
+              <p className="text-xs mt-2 text-gray-400">{BRAND.tagline}</p>
             </>
           )}
         </div>
       </div>
 
-      {/* Compact why-us trust strip — quick reassurance right below the hero;
+      {/* Compact trust checklist — quick reassurance right below the hero;
           the full "Why choose us" section still lives further down the page. */}
       <div style={{ borderBottom: '1px solid var(--border-lo)' }}>
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex flex-wrap items-center justify-center sm:justify-between gap-x-6 gap-y-2 text-xs sm:text-sm">
-          {[
-            [BadgeCheck,     'Vetëm makina të verifikuara'],
-            [Truck,          'Çmim all-in deri te porti juaj'],
-            [Clock,          'Dorëzim 30–45 ditë'],
-            [Shield,         'Garanci kthimi · zero risk'],
-          ].map(([Icon, text]) => (
+          {TRUST_CHECKLIST.map(([Icon, text]) => (
             <span key={text} className="flex items-center gap-1.5 font-medium" style={{ color: 'var(--text-2)' }}>
               <Icon className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />{text}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* LOC/SVC/LOG/FIN operational info strip — logistics facts, kept
+          visually distinct (graphite, not red) from the marketing/CTA strip above. */}
+      <div style={{ borderBottom: '1px solid var(--border-lo)', background: 'var(--bg-card2)' }}>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-2 text-xs sm:text-sm">
+          {INFO_BLOCKS.map(({ code, icon: Icon, text }) => (
+            <span key={code} className="flex items-center gap-1.5" style={{ color: 'var(--text-2)' }}>
+              <Icon className="w-3.5 h-3.5 text-graphite flex-shrink-0" />
+              <span className="font-mono font-semibold text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-4)' }}>{code}</span>
+              {text}
             </span>
           ))}
         </div>
@@ -370,7 +395,7 @@ export default function Home() {
                 <div key={title}
                   className="rounded-2xl p-5 transition-all group"
                   style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(220,38,38,0.25)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(196,34,46,0.25)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
                 >
                   <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center mb-3 group-hover:bg-red-500/15 transition-colors">
@@ -382,7 +407,7 @@ export default function Home() {
               ))}
             </div>
             <div className="mt-8 text-center">
-              <a href="https://wa.me/38348407634" target="_blank" rel="noopener noreferrer"
+              <a href={waLink()} target="_blank" rel="noopener noreferrer"
                  className="btn-primary px-8 py-3 text-sm inline-flex items-center gap-2">
                 💬 Na Kontaktoni Tani
               </a>
@@ -412,7 +437,7 @@ export default function Home() {
               <div key={title}
                 className="rounded-2xl p-6 transition-all group"
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(220,38,38,0.25)'; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(196,34,46,0.25)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
               >
                 <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center mb-4 group-hover:bg-red-500/15 transition-colors">
@@ -424,7 +449,7 @@ export default function Home() {
             ))}
           </div>
           <div className="mt-12 text-center">
-            <a href="https://wa.me/38348407634" target="_blank" rel="noopener noreferrer" className="btn-primary px-8 py-3 text-sm inline-flex items-center gap-2">
+            <a href={waLink()} target="_blank" rel="noopener noreferrer" className="btn-primary px-8 py-3 text-sm inline-flex items-center gap-2">
               Na Kontaktoni Tani
             </a>
             <p className="text-xs mt-3" style={{ color: 'var(--text-4)' }}>Pa asnjë angazhim · Konsultë falas</p>

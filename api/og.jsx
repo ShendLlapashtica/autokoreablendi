@@ -2,6 +2,13 @@ import { ImageResponse } from '@vercel/og';
 
 export const config = { runtime: 'edge' };
 
+// Runs as an isolated Vercel edge function, separate from the SPA bundle —
+// intentionally not importing src/lib/brand.js so this stays self-contained.
+const BRAND_NAME  = 'Auto Korea Blendi';
+const SITE_URL    = 'auto-korea-blendi.vercel.app';
+const LOGO_URL    = 'https://auto-korea-blendi.vercel.app/logo.png';
+const PHONE_DISP  = '+383 44 555 630';
+
 export default function handler() {
   return new ImageResponse(
     (
@@ -24,14 +31,14 @@ export default function handler() {
           position: 'absolute', top: '-120px', right: '-80px',
           width: '500px', height: '500px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(220,38,38,0.12) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(196,34,46,0.12) 0%, transparent 70%)',
           display: 'flex',
         }} />
         <div style={{
           position: 'absolute', bottom: '-100px', left: '200px',
           width: '400px', height: '400px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(220,38,38,0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(196,34,46,0.08) 0%, transparent 70%)',
           display: 'flex',
         }} />
 
@@ -39,10 +46,10 @@ export default function handler() {
         <div style={{ display: 'flex' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://auto-korea-partner.vercel.app/logo.png"
+            src={LOGO_URL}
             width="360"
             height="165"
-            alt="Auto Korea Partner"
+            alt={BRAND_NAME}
           />
         </div>
 
@@ -53,9 +60,9 @@ export default function handler() {
           </div>
           <div style={{ fontSize: '44px', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.5px', display: 'flex', gap: '12px' }}>
             <span style={{ color: '#1A1A1A' }}>për</span>
-            <span style={{ color: '#DC2626' }}>Shqipëri</span>
+            <span style={{ color: '#C4222E' }}>Shqipëri</span>
             <span style={{ color: '#8A8A93' }}>&</span>
-            <span style={{ color: '#DC2626' }}>Kosovë</span>
+            <span style={{ color: '#C4222E' }}>Kosovë</span>
           </div>
           <div style={{ fontSize: '22px', color: '#52525B', marginTop: '4px', fontWeight: 400 }}>
             🇰🇷 → 🇦🇱 🇽🇰  ·  Çmim all-in · Inspektim Encar · Dorëzim 30–45 ditë
@@ -69,8 +76,8 @@ export default function handler() {
             <span style={{ fontSize: '16px', color: '#52525B', fontWeight: 500 }}>listëzime live · drejtpërdrejt nga Encar</span>
           </div>
           <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-            <span style={{ fontSize: '18px', color: '#52525B', fontWeight: 600 }}>auto-korea-partner.vercel.app</span>
-            <span style={{ fontSize: '14px', color: '#8A8A93', fontWeight: 400 }}>+383 48 407 634</span>
+            <span style={{ fontSize: '18px', color: '#52525B', fontWeight: 600 }}>{SITE_URL}</span>
+            <span style={{ fontSize: '14px', color: '#8A8A93', fontWeight: 400 }}>{PHONE_DISP}</span>
           </div>
         </div>
       </div>

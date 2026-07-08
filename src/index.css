@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -59,10 +59,10 @@
     @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-red-500
            hover:bg-red-600 active:scale-95 text-white font-bold rounded-lg
            transition-all duration-150 disabled:opacity-40 select-none;
-    box-shadow: 0 4px 14px rgba(255,69,0,0.28);
+    box-shadow: 0 4px 14px rgba(196,34,46,0.28);
   }
   .btn-primary:hover {
-    box-shadow: 0 6px 20px rgba(255,69,0,0.4);
+    box-shadow: 0 6px 20px rgba(196,34,46,0.4);
   }
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2.5
