@@ -208,7 +208,7 @@ export default function Home() {
         <img src="/hero-bmw.png" alt=""
              className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: 'center 25%' }} />
         <div className="absolute inset-0" style={{
-          background: 'linear-gradient(180deg, rgba(5,5,12,0.35) 0%, rgba(5,5,12,0.55) 45%, var(--bg-page) 100%)',
+          background: 'linear-gradient(180deg, rgba(5,5,12,0.35) 0%, rgba(5,5,12,0.55) 45%, var(--bg-page-solid) 100%)',
         }} />
 
         <div className="relative max-w-7xl mx-auto px-4 md:px-8 pt-14 md:pt-20 pb-10 md:pb-14">
@@ -262,34 +262,6 @@ export default function Home() {
             forceOpen={filterForceOpen}
             onForceClose={() => setFilterForceOpen(false)}
           />
-        </div>
-      </div>
-
-      {/* Trust checklist — red pill row, quick reassurance below the filters. */}
-      <div style={{ borderBottom: '1px solid var(--border-lo)', background: 'var(--bg-card2)' }}>
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex flex-wrap items-center justify-center sm:justify-start gap-2">
-          {TRUST_CHECKLIST.map(([Icon, text]) => (
-            <span key={text}
-                  className="inline-flex items-center gap-1.5 pl-2 pr-3 py-1 rounded-full text-[11px] sm:text-xs font-medium"
-                  style={{ background: 'rgba(181,9,9,0.08)', border: '1px solid rgba(181,9,9,0.18)', color: 'var(--text-2)' }}>
-              <Icon className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />{text}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Operational facts — plain stacked list, deliberately quiet/graphite
-          so it reads as logistics info rather than marketing. */}
-      <div style={{ borderBottom: '1px solid var(--border-lo)' }}>
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
-          <ul className="space-y-1.5">
-            {INFO_BLOCKS.map(({ icon: Icon, text }) => (
-              <li key={text} className="flex items-center gap-2 text-sm pl-3" style={{ borderLeft: '2px solid #15171B', color: 'var(--text-2)' }}>
-                <Icon className="w-3.5 h-3.5 text-graphite flex-shrink-0" />
-                {text}
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
 
@@ -416,6 +388,34 @@ export default function Home() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Trust checklist — red pill row, quick reassurance further down the page. */}
+      <div style={{ borderTop: '1px solid var(--border-lo)', background: 'var(--bg-card2)' }}>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+          {TRUST_CHECKLIST.map(([Icon, text]) => (
+            <span key={text}
+                  className="inline-flex items-center gap-1.5 pl-2 pr-3 py-1 rounded-full text-[11px] sm:text-xs font-medium"
+                  style={{ background: 'rgba(181,9,9,0.08)', border: '1px solid rgba(181,9,9,0.18)', color: 'var(--text-2)' }}>
+              <Icon className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />{text}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Operational facts — plain stacked list, deliberately quiet/graphite
+          so it reads as logistics info rather than marketing. */}
+      <div style={{ borderBottom: '1px solid var(--border-lo)', background: 'var(--bg-card2)' }}>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 pb-4">
+          <ul className="space-y-1.5">
+            {INFO_BLOCKS.map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-center gap-2 text-sm pl-3" style={{ borderLeft: '2px solid #15171B', color: 'var(--text-2)' }}>
+                <Icon className="w-3.5 h-3.5 text-graphite flex-shrink-0" />
+                {text}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
       {/* Why Choose Us */}

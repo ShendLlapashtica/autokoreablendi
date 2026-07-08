@@ -7,6 +7,7 @@
 /* ── CSS variables — light glassmorphic theme ── */
 :root {
   --bg-page:    linear-gradient(180deg, #FAFAFB 0%, #EEEEF0 100%);
+  --bg-page-solid: #EEEEF0;
   --bg-card:    #FFFFFF;
   --bg-card2:   #F8F9FA;
   --bg-input:   rgba(0,0,0,0.03);
