@@ -81,7 +81,7 @@ export default function Header() {
 
           {/* Logo */}
           <Link to="/" className="flex items-center group select-none flex-shrink-0 mr-2">
-            <img src={BRAND.logoPath} alt={BRAND.name} className="h-11 w-auto" />
+            <img src={BRAND.logoPath} alt={BRAND.name} className="h-12 w-auto" />
           </Link>
 
           {/* Search — desktop */}

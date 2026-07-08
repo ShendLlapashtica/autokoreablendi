@@ -5,7 +5,7 @@ export default function Footer() {
     <footer style={{ borderTop: '1px solid var(--border-lo)', marginTop: '2rem', background: 'var(--bg-card2)' }}>
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
         <div>
-          <img src={BRAND.logoPath} alt={BRAND.name} className="h-14 w-auto" />
+          <img src={BRAND.logoPath} alt={BRAND.name} className="h-16 w-auto" />
           <p className="text-xs font-semibold tracking-wide mt-3" style={{ color: 'var(--text-3)' }}>
             {BRAND.tagline}
           </p>
