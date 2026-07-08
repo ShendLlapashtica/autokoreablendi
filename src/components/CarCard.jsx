@@ -4,6 +4,7 @@ import { carPhotoUrl, allPhotoUrls, fmtEur, fmtKm, carYear, tr, trCity } from '.
 import { translateFuel, translateTrans, translateColor } from '../lib/translations.js';
 import { useCountry } from '../contexts/CountryContext.jsx';
 import { brandInitials } from '../lib/brandVisual.js';
+import { getBrandLogo } from '../lib/logos.js';
 
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='260'%3E%3Crect width='400' height='260' fill='%23F8F9FA'/%3E%3Ctext x='200' y='138' text-anchor='middle' fill='%23C4C4CA' font-size='13' font-family='sans-serif'%3EFoto nuk disponohet%3C/text%3E%3C/svg%3E";
 
@@ -42,6 +43,7 @@ export default function CarCard({ car }) {
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [broken, setBroken] = useState(() => new Set());
+  const [logoBroken, setLogoBroken] = useState(false);
   const fetchingRef = useRef(false);
   const { priceFor, label } = useCountry();
 
@@ -161,9 +163,22 @@ export default function CarCard({ car }) {
         {/* Name */}
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-graphite text-white flex items-center justify-center text-[10px] font-bold tracking-tight">
-              {brandInitials(maker)}
-            </span>
+            {(() => {
+              const logoUrl = getBrandLogo(maker);
+              return logoUrl && !logoBroken ? (
+                <img
+                  src={logoUrl}
+                  alt={maker}
+                  className="flex-shrink-0 w-7 h-7 rounded-full object-contain bg-white border"
+                  style={{ borderColor: 'var(--border)' }}
+                  onError={() => setLogoBroken(true)}
+                />
+              ) : (
+                <span className="flex-shrink-0 w-7 h-7 rounded-full bg-graphite text-white flex items-center justify-center text-[10px] font-bold tracking-tight">
+                  {brandInitials(maker)}
+                </span>
+              );
+            })()}
             <h3 className="text-base font-bold leading-snug" style={{ color: 'var(--text-1)' }}>
               {maker} <span style={{ color: 'var(--text-2)' }}>{model}</span>
             </h3>

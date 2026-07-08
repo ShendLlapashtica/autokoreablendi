@@ -6,6 +6,29 @@ import Filters from '../components/Filters.jsx';
 import { waLink } from '../lib/brand.js';
 import { TRUST_CHECKLIST, INFO_BLOCKS } from '../lib/trustContent.js';
 import { BRANDS } from '../lib/brandModels.js';
+import { getBrandLogo } from '../lib/logos.js';
+
+function MarqueeItem({ brand }) {
+  const [broken, setBroken] = useState(false);
+  const logoUrl = getBrandLogo(brand);
+
+  if (logoUrl && !broken) {
+    return (
+      <img
+        src={logoUrl}
+        alt={brand}
+        title={brand}
+        className="flex-shrink-0 h-6 w-auto object-contain grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition-all"
+        onError={() => setBroken(true)}
+      />
+    );
+  }
+  return (
+    <span className="flex-shrink-0 font-display text-sm font-bold uppercase tracking-wide" style={{ color: 'var(--text-3)' }}>
+      {brand}
+    </span>
+  );
+}
 
 const PAGE_SIZE = 24;
 const EMPTY_FILTERS = {
@@ -386,8 +409,9 @@ export default function Home() {
         )}
       </div>
 
-      {/* Brand marquee — continuous scroll of manufacturer names above the
-          trust strip. Plain text, not brand logo artwork. */}
+      {/* Brand marquee — scrolls each brand's logo from src/lib/logos.js when
+          a matching file exists in public/logos/, otherwise falls back to
+          the plain brand name. */}
       <div className="marquee-wrap overflow-hidden" style={{ borderTop: '1px solid var(--border-lo)', background: 'var(--bg-card)' }}>
         <div
           className="py-3"
@@ -396,14 +420,8 @@ export default function Home() {
             WebkitMaskImage: 'linear-gradient(90deg, transparent, black 8%, black 92%, transparent)',
           }}
         >
-          <div className="marquee-track flex w-max gap-10">
-            {[...BRANDS, ...BRANDS].map((b, i) => (
-              <span key={i}
-                    className="flex-shrink-0 font-display text-sm font-bold uppercase tracking-wide"
-                    style={{ color: 'var(--text-3)' }}>
-                {b}
-              </span>
-            ))}
+          <div className="marquee-track flex w-max items-center gap-10">
+            {[...BRANDS, ...BRANDS].map((b, i) => <MarqueeItem key={i} brand={b} />)}
           </div>
         </div>
       </div>
