@@ -248,32 +248,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Compact trust checklist — quick reassurance right below the hero;
-          the full "Why choose us" section still lives further down the page. */}
-      <div style={{ borderBottom: '1px solid var(--border-lo)' }}>
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex flex-wrap items-center justify-center sm:justify-between gap-x-6 gap-y-2 text-xs sm:text-sm">
-          {TRUST_CHECKLIST.map(([Icon, text]) => (
-            <span key={text} className="flex items-center gap-1.5 font-medium" style={{ color: 'var(--text-2)' }}>
-              <Icon className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />{text}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* LOC/SVC/LOG/FIN operational info strip — logistics facts, kept
-          visually distinct (graphite, not red) from the marketing/CTA strip above. */}
-      <div style={{ borderBottom: '1px solid var(--border-lo)', background: 'var(--bg-card2)' }}>
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-2 text-xs sm:text-sm">
-          {INFO_BLOCKS.map(({ code, icon: Icon, text }) => (
-            <span key={code} className="flex items-center gap-1.5" style={{ color: 'var(--text-2)' }}>
-              <Icon className="w-3.5 h-3.5 text-graphite flex-shrink-0" />
-              <span className="font-mono font-semibold text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-4)' }}>{code}</span>
-              {text}
-            </span>
-          ))}
-        </div>
-      </div>
-
       {/* Filters — full-width glass bar directly below the hero */}
       <div ref={filtersWrapRef}
            style={{
@@ -289,6 +263,30 @@ export default function Home() {
             forceOpen={filterForceOpen}
             onForceClose={() => setFilterForceOpen(false)}
           />
+        </div>
+      </div>
+
+      {/* Trust + logistics chips — combined into one pill-badge row below the
+          filters; red chips are marketing reassurance, graphite chips are
+          operational facts (location/customs/transport/payment). */}
+      <div style={{ borderBottom: '1px solid var(--border-lo)', background: 'var(--bg-card2)' }}>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+          {TRUST_CHECKLIST.map(([Icon, text]) => (
+            <span key={text}
+                  className="inline-flex items-center gap-1.5 pl-2 pr-3 py-1 rounded-full text-[11px] sm:text-xs font-medium"
+                  style={{ background: 'rgba(196,34,46,0.08)', border: '1px solid rgba(196,34,46,0.18)', color: 'var(--text-2)' }}>
+              <Icon className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />{text}
+            </span>
+          ))}
+          {INFO_BLOCKS.map(({ code, icon: Icon, text }) => (
+            <span key={code}
+                  className="inline-flex items-center gap-1.5 pl-2 pr-3 py-1 rounded-full text-[11px] sm:text-xs font-medium"
+                  style={{ background: 'rgba(21,23,27,0.05)', border: '1px solid rgba(21,23,27,0.12)', color: 'var(--text-2)' }}>
+              <Icon className="w-3.5 h-3.5 text-graphite flex-shrink-0" />
+              <span className="font-mono font-semibold text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-4)' }}>{code}</span>
+              {text}
+            </span>
+          ))}
         </div>
       </div>
 
