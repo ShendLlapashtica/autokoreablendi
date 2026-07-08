@@ -1,8 +1,7 @@
 // Strict registry: a brand only renders a logo image if it's listed here
 // AND the matching file actually exists in public/logos/. No fallback
 // substitution happens in this module — components decide what to do
-// when getBrandLogo() returns null (see brandVisual.js for the monogram
-// badge used as a visual fallback).
+// when getBrandLogo() returns null (currently: render nothing).
 const logoRegistry = {
   'Hyundai': 'hyundai.png',
   'Kia': 'kia.png',
