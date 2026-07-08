@@ -228,6 +228,31 @@ async function attempt(fetchUrl, isWrapped, signal, label, extraHeaders = {}) {
 // (성능기록부) to be on file — verified live at 204,156 of 213,055 normal-sale
 // listings (96%), matching this site's own "every car is inspected" claim,
 // so this only drops the small uninspected/unverifiable minority.
+// Default browsing (no explicit price sort) is ranked newest-first by Encar,
+// which mixes in thin, undocumented listings alongside genuinely well-kept
+// cars. This nudges better-documented, lower-risk listings to the top of
+// each fetched page without touching an explicit user sort choice — Trust/
+// ServiceMark badges and richer photo sets are Encar's own signals of a
+// more trustworthy, "complete" listing; recent/low-mileage cars get a small
+// boost too since they're the ones buyers actually want surfaced first.
+function qualityScore(car) {
+  let score = 0;
+  score += (car.Condition   || []).length * 2;
+  score += (car.Trust       || []).length * 3;
+  score += (car.ServiceMark || []).length * 2;
+  if ((car.Photos || []).length >= 8) score += 2;
+
+  const year = parseInt(String(car.FormYear || car.Year || '').slice(0, 4)) || 0;
+  if (year >= 2021) score += 2;
+  else if (year >= 2018) score += 1;
+
+  if (car.Mileage != null) {
+    if (car.Mileage < 50000) score += 2;
+    else if (car.Mileage < 100000) score += 1;
+  }
+  return score;
+}
+
 async function runSearch(parts, offset, count, signal, sortKey = 'ModifiedDate') {
   const allParts = ['SellType.일반', 'Condition.Inspection', ...parts];
   const filter = `(And.Hidden.N._.${allParts.join('._.')}.)`;
@@ -427,11 +452,20 @@ export default async function handler(req, res) {
     }
 
     clearTimeout(timer);
+
+    // Only re-rank the default (newest-first) browse — an explicit price
+    // sort from the user is a stronger, deliberate signal and must win.
+    const results = sortKey === 'ModifiedDate'
+      ? data.SearchResults.map((car, i) => ({ car, i, s: qualityScore(car) }))
+          .sort((a, b) => b.s - a.s || a.i - b.i)
+          .map(x => x.car)
+      : data.SearchResults;
+
     return res.status(200).json({
       total:   data.Count,
       page,
-      count:   data.SearchResults.length,
-      results: data.SearchResults,
+      count:   results.length,
+      results,
     });
 
   } catch (err) {

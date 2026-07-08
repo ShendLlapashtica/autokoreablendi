@@ -1,23 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Shield, Truck, BadgeCheck, Clock, HeartHandshake, Globe, X, SlidersHorizontal, MapPin, Stamp, Gauge, Wallet } from 'lucide-react';
+import { X, SlidersHorizontal } from 'lucide-react';
 import CarCard from '../components/CarCard.jsx';
 import Filters from '../components/Filters.jsx';
 import { waLink } from '../lib/brand.js';
-
-const INFO_BLOCKS = [
-  { icon: MapPin, text: 'Magjistrale Prishtinë–Ferizaj (Gadime)' },
-  { icon: Stamp,  text: 'Doganim & Inspektim' },
-  { icon: Truck,  text: 'Transport deri në Kosovë' },
-  { icon: Wallet, text: 'Pagesa në Kosovë' },
-];
-
-const TRUST_CHECKLIST = [
-  [BadgeCheck, 'Inspektim i plotë në arritje'],
-  [Truck,      'Transport i sigurt deri në Kosovë'],
-  [Gauge,      'Kilometrazh real'],
-  [Shield,     'Mundësi rezervimi me kapar'],
-];
+import { TRUST_CHECKLIST, INFO_BLOCKS } from '../lib/trustContent.js';
 
 const PAGE_SIZE = 24;
 const EMPTY_FILTERS = {
@@ -25,15 +12,6 @@ const EMPTY_FILTERS = {
   yearFrom: '', yearTo: '', mileageTo: '', priceFrom: '', priceTo: '',
   sort: '',
 };
-
-const WHY_US = [
-  { icon: BadgeCheck,     title: 'Vetëm Makina të Verifikuara', desc: 'Çdo makinë ka raport inspektimi nga Encar — histori dëmtimesh, numër pronarësh dhe aksidente.' },
-  { icon: Globe,          title: '200,000+ Listëzime Live',     desc: 'Direkta nga platforma koreane Encar.com — çmimet dhe disponueshmëria janë në kohë reale.' },
-  { icon: Truck,          title: 'Çmim All-in',                 desc: 'Çmimi përfshin transportin deri te porti juaj. Pa kosto të fshehura.' },
-  { icon: Clock,          title: 'Dorëzim 30–45 Ditë',          desc: 'Pas konfirmimit të porosisë, makina mbërrin brenda 4–6 javësh.' },
-  { icon: HeartHandshake, title: 'Asistencë e Plotë Doganore',  desc: 'E organizojmë gjithë procesin e doganes, TVSH-ës dhe regjistrimit për ju.' },
-  { icon: Shield,         title: 'Garanci Kthimi',              desc: 'Nëse makina nuk përputhet me përshkrimin, marrim kujdesin e plotë. Zero risk.' },
-];
 
 function filtersFromParams(params) {
   return {
@@ -249,13 +227,31 @@ export default function Home() {
 
       {/* Filters — full-width glass bar directly below the hero */}
       <div ref={filtersWrapRef}
+           className="relative"
            style={{
              background: 'var(--glass-bg)',
              borderBottom: '1px solid var(--glass-border)',
              backdropFilter: 'blur(20px) saturate(140%)',
              WebkitBackdropFilter: 'blur(20px) saturate(140%)',
+             boxShadow: '0 8px 24px rgba(0,0,0,0.04)',
            }}>
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+        <div className="absolute top-0 left-0 right-0 h-[3px]"
+             style={{ background: 'linear-gradient(90deg,#7A0606,#B50909,#D34F4F,#B50909,#7A0606)' }} />
+        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-5 pb-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest font-mono font-semibold" style={{ color: 'var(--text-3)' }}>
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
+              </span>
+              Kërko &amp; Filtro
+            </p>
+            {total != null && (
+              <p className="text-[11px] font-mono" style={{ color: 'var(--text-3)' }}>
+                <span className="font-semibold" style={{ color: 'var(--text-1)' }}>{total.toLocaleString('de-DE')}</span> gjithsej
+              </p>
+            )}
+          </div>
           <Filters
             filters={filters}
             onChange={handleFilterChange}
@@ -363,19 +359,18 @@ export default function Home() {
                 Importojmë direkt nga Korea Jugore — pa ndërmjetës, pa surpriza. Transparencë totale.
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {WHY_US.map(({ icon: Icon, title, desc }) => (
-                <div key={title}
-                  className="rounded-2xl p-5 transition-all group"
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {TRUST_CHECKLIST.map(([Icon, text]) => (
+                <div key={text}
+                  className="group relative overflow-hidden rounded-2xl p-4 text-center transition-all"
                   style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(181,9,9,0.25)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(181,9,9,0.3)'; e.currentTarget.style.boxShadow = '0 10px 20px rgba(181,9,9,0.1)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
                 >
-                  <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center mb-3 group-hover:bg-red-500/15 transition-colors">
-                    <Icon className="w-4 h-4 text-red-400" />
+                  <div className="mx-auto w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center mb-2.5 group-hover:bg-red-500/15 transition-colors">
+                    <Icon className="w-4 h-4 text-red-500" />
                   </div>
-                  <h3 className="font-bold text-sm mb-1.5" style={{ color: 'var(--text-1)' }}>{title}</h3>
-                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-3)' }}>{desc}</p>
+                  <h3 className="font-display font-bold text-xs leading-snug" style={{ color: 'var(--text-1)' }}>{text}</h3>
                 </div>
               ))}
             </div>
@@ -433,19 +428,20 @@ export default function Home() {
               Transparencë totale nga listëzimi deri te porti juaj.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {WHY_US.map(({ icon: Icon, title, desc }) => (
-              <div key={title}
-                className="rounded-2xl p-6 transition-all group"
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {TRUST_CHECKLIST.map(([Icon, text]) => (
+              <div key={text}
+                className="group relative overflow-hidden rounded-2xl p-6 text-center transition-all hover:-translate-y-1"
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(181,9,9,0.25)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(181,9,9,0.3)'; e.currentTarget.style.boxShadow = '0 12px 24px rgba(181,9,9,0.12)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
               >
-                <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center mb-4 group-hover:bg-red-500/15 transition-colors">
-                  <Icon className="w-5 h-5 text-red-400" />
+                <div className="mx-auto w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center mb-4 group-hover:bg-red-500/15 transition-colors">
+                  <Icon className="w-5 h-5 text-red-500" />
                 </div>
-                <h3 className="font-bold text-sm mb-2" style={{ color: 'var(--text-1)' }}>{title}</h3>
-                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-3)' }}>{desc}</p>
+                <h3 className="font-display font-bold text-sm leading-snug" style={{ color: 'var(--text-1)' }}>{text}</h3>
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-0 group-hover:w-2/3 transition-all duration-300"
+                     style={{ background: 'linear-gradient(90deg,#D34F4F,#B50909)' }} />
               </div>
             ))}
           </div>

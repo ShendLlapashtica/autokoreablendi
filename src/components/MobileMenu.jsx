@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { X, Calculator, ChevronRight } from 'lucide-react';
 import { useEffect } from 'react';
 import { BRAND, waLink } from '../lib/brand.js';
+import { TRUST_CHECKLIST, INFO_BLOCKS } from '../lib/trustContent.js';
 
 export default function MobileMenu({ onClose, onOpenCalc, country, setCountry }) {
   useEffect(() => {
@@ -59,11 +60,31 @@ export default function MobileMenu({ onClose, onOpenCalc, country, setCountry })
           </button>
         </nav>
 
-        {/* Tagline */}
-        <div className="flex-1 flex items-center px-5 py-3" style={{ borderTop: '1px solid var(--border-lo)' }}>
-          <p className="font-display text-base font-bold leading-snug" style={{ color: 'var(--text-1)' }}>
+        {/* Tagline + trust checklist + logistics facts */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4" style={{ borderTop: '1px solid var(--border-lo)' }}>
+          <p className="font-display text-sm font-bold leading-snug" style={{ color: 'var(--text-1)' }}>
             {BRAND.tagline}
           </p>
+
+          <div className="space-y-2">
+            {TRUST_CHECKLIST.map(([Icon, text]) => (
+              <div key={text} className="flex items-center gap-2.5 text-xs" style={{ color: 'var(--text-2)' }}>
+                <span className="flex-shrink-0 w-6 h-6 rounded-lg bg-red-500/10 flex items-center justify-center">
+                  <Icon className="w-3.5 h-3.5 text-red-500" />
+                </span>
+                {text}
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-1.5 pt-1" style={{ borderTop: '1px solid var(--border-lo)' }}>
+            {INFO_BLOCKS.map(({ icon: Icon, text }) => (
+              <div key={text} className="flex items-center gap-2 text-xs pl-2.5 py-0.5" style={{ borderLeft: '2px solid #15171B', color: 'var(--text-3)' }}>
+                <Icon className="w-3 h-3 text-graphite flex-shrink-0" />
+                {text}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Footer CTA */}
