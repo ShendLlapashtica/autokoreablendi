@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { carPhotoUrl, allPhotoUrls, fmtEur, fmtKm, carYear, tr, trCity } from '../lib/utils.js';
 import { translateFuel, translateTrans, translateColor } from '../lib/translations.js';
 import { useCountry } from '../contexts/CountryContext.jsx';
+import { brandInitials } from '../lib/brandVisual.js';
 
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='260'%3E%3Crect width='400' height='260' fill='%23F8F9FA'/%3E%3Ctext x='200' y='138' text-anchor='middle' fill='%23C4C4CA' font-size='13' font-family='sans-serif'%3EFoto nuk disponohet%3C/text%3E%3C/svg%3E";
 
@@ -159,9 +160,14 @@ export default function CarCard({ car }) {
       <div className="flex flex-col flex-1 p-4 gap-3">
         {/* Name */}
         <div>
-          <h3 className="text-base font-bold leading-snug" style={{ color: 'var(--text-1)' }}>
-            {maker} <span style={{ color: 'var(--text-2)' }}>{model}</span>
-          </h3>
+          <div className="flex items-center gap-2">
+            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-graphite text-white flex items-center justify-center text-[10px] font-bold tracking-tight">
+              {brandInitials(maker)}
+            </span>
+            <h3 className="text-base font-bold leading-snug" style={{ color: 'var(--text-1)' }}>
+              {maker} <span style={{ color: 'var(--text-2)' }}>{model}</span>
+            </h3>
+          </div>
           {badge && (
             <p className="text-xs mt-0.5 leading-snug truncate" style={{ color: 'var(--text-3)' }}>
               {[badge, badgeDetail].filter(Boolean).join(' · ')}

@@ -5,6 +5,7 @@ import CarCard from '../components/CarCard.jsx';
 import Filters from '../components/Filters.jsx';
 import { waLink } from '../lib/brand.js';
 import { TRUST_CHECKLIST, INFO_BLOCKS } from '../lib/trustContent.js';
+import { BRANDS } from '../lib/brandModels.js';
 
 const PAGE_SIZE = 24;
 const EMPTY_FILTERS = {
@@ -383,6 +384,28 @@ export default function Home() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Brand marquee — continuous scroll of manufacturer names above the
+          trust strip. Plain text, not brand logo artwork. */}
+      <div className="marquee-wrap overflow-hidden" style={{ borderTop: '1px solid var(--border-lo)', background: 'var(--bg-card)' }}>
+        <div
+          className="py-3"
+          style={{
+            maskImage: 'linear-gradient(90deg, transparent, black 8%, black 92%, transparent)',
+            WebkitMaskImage: 'linear-gradient(90deg, transparent, black 8%, black 92%, transparent)',
+          }}
+        >
+          <div className="marquee-track flex w-max gap-10">
+            {[...BRANDS, ...BRANDS].map((b, i) => (
+              <span key={i}
+                    className="flex-shrink-0 font-display text-sm font-bold uppercase tracking-wide"
+                    style={{ color: 'var(--text-3)' }}>
+                {b}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Trust checklist — red pill row, quick reassurance further down the page. */}
