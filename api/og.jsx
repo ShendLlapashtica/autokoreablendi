@@ -6,7 +6,7 @@ export const config = { runtime: 'edge' };
 // intentionally not importing src/lib/brand.js so this stays self-contained.
 const BRAND_NAME  = 'Auto Korea Blendi';
 const SITE_URL    = 'auto-korea-blendi.vercel.app';
-const LOGO_URL    = 'https://auto-korea-blendi.vercel.app/logo.jpg';
+const LOGO_URL    = 'https://auto-korea-blendi.vercel.app/logo.png';
 const PHONE_DISP  = '+383 44 555 630';
 
 export default function handler() {
@@ -47,7 +47,7 @@ export default function handler() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={LOGO_URL}
-            width="248"
+            width="549"
             height="165"
             alt={BRAND_NAME}
           />

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { carPhotoUrl, allPhotoUrls, fmtEur, fmtKm, carYear, tr, trCity } from '../lib/utils.js';
 import { translateFuel, translateTrans, translateColor } from '../lib/translations.js';
@@ -6,7 +6,23 @@ import { useCountry } from '../contexts/CountryContext.jsx';
 
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='260'%3E%3Crect width='400' height='260' fill='%23F8F9FA'/%3E%3Ctext x='200' y='138' text-anchor='middle' fill='%23C4C4CA' font-size='13' font-family='sans-serif'%3EFoto nuk disponohet%3C/text%3E%3C/svg%3E";
 
-const CONDITION_ALB = { Inspection: 'Inspektuar', Record: 'Histori', Resume: 'Raport', Warranty: 'Garanci' };
+const CONDITION_ALB = { Inspection: 'Inspektuar', InspectionDirect: 'Inspektim Direkt', Record: 'Histori', Resume: 'Raport', Warranty: 'Garanci' };
+
+// Encar's own security/insurance/verification badges (Trust + ServiceMark
+// fields), translated to Albanian and shown alongside the condition badges.
+const SECURITY_ALB = {
+  ExtendWarranty:    'Garanci e Zgjatur',
+  HomeService:       'Verifikim në Vend',
+  Meetgo:            'Takim i Verifikuar',
+  EncarMeetgo:       'Takim i Verifikuar',
+  EncarDiagnosisP0:  'Diagnostikim i Certifikuar',
+  EncarDiagnosisP1:  'Diagnostikim i Certifikuar',
+  EncarDiagnosisP2:  'Diagnostikim i Certifikuar',
+};
+
+// Per-tab photo cache keyed by car Id — a hovered card's full gallery is
+// fetched once and reused if the same card is hovered again.
+const photoCache = new Map();
 
 const FUEL_COLOR = {
   'Elektrik': 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25',
@@ -16,12 +32,16 @@ const FUEL_COLOR = {
 };
 
 export default function CarCard({ car }) {
-  const photos = useMemo(() => {
+  const basePhotos = useMemo(() => {
     const urls = allPhotoUrls(car);
     return urls.length > 0 ? urls : (carPhotoUrl(car) ? [carPhotoUrl(car)] : []);
   }, [car]);
+  const [fullPhotos, setFullPhotos] = useState(() => photoCache.get(car.Id) || null);
+  const photos = fullPhotos && fullPhotos.length > basePhotos.length ? fullPhotos : basePhotos;
+
   const [activeIdx, setActiveIdx] = useState(0);
   const [broken, setBroken] = useState(() => new Set());
+  const fetchingRef = useRef(false);
   const { priceFor, label } = useCountry();
 
   // Keep each surviving photo paired with its original index so a broken
@@ -35,6 +55,21 @@ export default function CarCard({ car }) {
     const rect = e.currentTarget.getBoundingClientRect();
     const ratio = (e.clientX - rect.left) / rect.width;
     setActiveIdx(Math.min(visible.length - 1, Math.max(0, Math.floor(ratio * visible.length))));
+  }
+
+  // Search-result listings only carry a handful of photos; fetch the car's
+  // full detail once on first hover to unlock its whole gallery for scrubbing.
+  function loadFullGallery() {
+    if (fetchingRef.current || photoCache.has(car.Id)) return;
+    fetchingRef.current = true;
+    fetch(`/api/car?id=${car.Id}`)
+      .then(r => r.json())
+      .then(data => {
+        const urls = allPhotoUrls(data);
+        photoCache.set(car.Id, urls);
+        if (urls.length > basePhotos.length) setFullPhotos(urls);
+      })
+      .catch(() => {});
   }
 
   const year   = carYear(car);
@@ -51,6 +86,9 @@ export default function CarCard({ car }) {
   const city   = trCity(car.OfficeCityState);
   const fuelCls = FUEL_COLOR[fuel] || FUEL_COLOR.default;
   const conditions = (car.Condition || []).slice(0, 3);
+  const securityBadges = [...new Set(
+    [...(car.Trust || []), ...(car.ServiceMark || [])].map(v => SECURITY_ALB[v]).filter(Boolean)
+  )].slice(0, 2);
 
   return (
     <Link
@@ -65,6 +103,7 @@ export default function CarCard({ car }) {
       <div
         className="relative overflow-hidden flex-shrink-0"
         style={{ aspectRatio: '16/10', background: 'var(--bg-card2)' }}
+        onMouseEnter={loadFullGallery}
         onMouseMove={scrub}
         onMouseLeave={() => setActiveIdx(0)}
       >
@@ -79,26 +118,37 @@ export default function CarCard({ car }) {
           }}
         />
         {visible.length > 1 && (
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 flex gap-1">
-            {visible.map((p, i) => (
-              <span
-                key={p.i}
-                className="rounded-full transition-all"
-                style={{
-                  width: i === activeIdx ? '14px' : '4px',
-                  height: '4px',
-                  background: i === activeIdx ? '#fff' : 'rgba(255,255,255,0.5)',
-                  boxShadow: '0 0 2px rgba(0,0,0,0.5)',
-                }}
-              />
-            ))}
-          </div>
+          visible.length > 8 ? (
+            <span className="absolute top-2 right-2 text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-black/60 backdrop-blur text-white">
+              {activeIdx + 1}/{visible.length}
+            </span>
+          ) : (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 flex gap-1">
+              {visible.map((p, i) => (
+                <span
+                  key={p.i}
+                  className="rounded-full transition-all"
+                  style={{
+                    width: i === activeIdx ? '14px' : '4px',
+                    height: '4px',
+                    background: i === activeIdx ? '#fff' : 'rgba(255,255,255,0.5)',
+                    boxShadow: '0 0 2px rgba(0,0,0,0.5)',
+                  }}
+                />
+              ))}
+            </div>
+          )
         )}
-        {conditions.length > 0 && (
-          <div className="absolute bottom-2 left-2 flex gap-1">
+        {(conditions.length > 0 || securityBadges.length > 0) && (
+          <div className="absolute bottom-2 left-2 flex flex-wrap gap-1 max-w-[calc(100%-1rem)]">
             {conditions.map(c => (
               <span key={c} className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-black/60 backdrop-blur text-white/70 border border-white/10">
                 {CONDITION_ALB[c] || c}
+              </span>
+            ))}
+            {securityBadges.map(label => (
+              <span key={label} className="flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-black/60 backdrop-blur text-emerald-300 border border-emerald-400/20">
+                🛡 {label}
               </span>
             ))}
           </div>

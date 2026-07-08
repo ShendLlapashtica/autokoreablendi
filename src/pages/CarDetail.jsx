@@ -57,17 +57,22 @@ export default function CarDetail() {
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, []);
 
+  // Always fetch the full car detail — a card clicked from the search grid
+  // only carries the list endpoint's limited photo set as router state, so
+  // this replaces it with the complete gallery once the fetch resolves.
   useEffect(() => {
-    if (car) return;
+    let cancelled = false;
     fetch(`/api/car?id=${id}`)
       .then(r => r.json())
       .then(data => {
+        if (cancelled) return;
         if (data.error) throw new Error(data.error);
         setCar(data.SearchResults?.[0] || data);
       })
-      .catch(e => setError(e.message))
-      .finally(() => setLoadingCar(false));
-  }, [id, car]);
+      .catch(e => { if (!cancelled) setError(e.message); })
+      .finally(() => { if (!cancelled) setLoadingCar(false); });
+    return () => { cancelled = true; };
+  }, [id]);
 
   useEffect(() => {
     if (!car?.Manufacturer) return;

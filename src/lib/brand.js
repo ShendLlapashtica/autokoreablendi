@@ -2,7 +2,7 @@ export const BRAND = {
   name: 'Auto Korea Blendi',
   shortName: 'Blendi',
   tagline: 'AUTO BLENDI – Zgjedhja juaj e duhur',
-  logoPath: '/logo.jpg',
+  logoPath: '/logo.png',
 
   phone: {
     primary: '+383 44 555 630',
