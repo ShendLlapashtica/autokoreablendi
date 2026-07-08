@@ -31,14 +31,14 @@ export default function handler() {
           position: 'absolute', top: '-120px', right: '-80px',
           width: '500px', height: '500px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(196,34,46,0.12) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(181,9,9,0.12) 0%, transparent 70%)',
           display: 'flex',
         }} />
         <div style={{
           position: 'absolute', bottom: '-100px', left: '200px',
           width: '400px', height: '400px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(196,34,46,0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(181,9,9,0.08) 0%, transparent 70%)',
           display: 'flex',
         }} />
 
@@ -60,9 +60,9 @@ export default function handler() {
           </div>
           <div style={{ fontSize: '44px', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.5px', display: 'flex', gap: '12px' }}>
             <span style={{ color: '#1A1A1A' }}>për</span>
-            <span style={{ color: '#C4222E' }}>Shqipëri</span>
+            <span style={{ color: '#B50909' }}>Shqipëri</span>
             <span style={{ color: '#8A8A93' }}>&</span>
-            <span style={{ color: '#C4222E' }}>Kosovë</span>
+            <span style={{ color: '#B50909' }}>Kosovë</span>
           </div>
           <div style={{ fontSize: '22px', color: '#52525B', marginTop: '4px', fontWeight: 400 }}>
             🇰🇷 → 🇦🇱 🇽🇰  ·  Çmim all-in · Inspektim Encar · Dorëzim 30–45 ditë

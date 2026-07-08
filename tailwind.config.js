@@ -7,25 +7,25 @@ export default {
       colors: {
         surface:      '#FFFFFF',
         card:         '#F8F9FA',
-        accent:       '#C4222E',
-        'accent-dark':'#96181F',
+        accent:       '#B50909',
+        'accent-dark':'#7A0606',
         graphite:     '#15171B',
         // Override Tailwind's default `red` scale so every existing
         // bg-red-*/text-red-*/border-red-* utility picks up the new
         // brand hue automatically.
         red: {
-          300: '#EB9FA5',
-          400: '#E2626C',
-          500: '#D63A44',
-          600: '#C4222E',
-          700: '#AC2129',
-          800: '#96181F',
-          900: '#6B0F16',
+          300: '#E38585',
+          400: '#D34F4F',
+          500: '#C22020',
+          600: '#B50909',
+          700: '#970808',
+          800: '#7A0606',
+          900: '#5C0505',
         },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['Sora', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['Montserrat', 'Inter', 'system-ui', 'sans-serif'],
       },
     },
   },

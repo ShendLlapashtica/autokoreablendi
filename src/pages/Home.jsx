@@ -3,13 +3,13 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { Shield, Truck, BadgeCheck, Clock, HeartHandshake, Globe, X, SlidersHorizontal, MapPin, Stamp, Gauge, Wallet } from 'lucide-react';
 import CarCard from '../components/CarCard.jsx';
 import Filters from '../components/Filters.jsx';
-import { BRAND, waLink } from '../lib/brand.js';
+import { waLink } from '../lib/brand.js';
 
 const INFO_BLOCKS = [
-  { code: 'LOC', icon: MapPin, text: 'Magjistrale Prishtinë–Ferizaj (Gadime)' },
-  { code: 'SVC', icon: Stamp,  text: 'Doganim & Inspektim' },
-  { code: 'LOG', icon: Truck,  text: 'Transport deri në Kosovë' },
-  { code: 'FIN', icon: Wallet, text: 'Pagesa në Kosovë' },
+  { icon: MapPin, text: 'Magjistrale Prishtinë–Ferizaj (Gadime)' },
+  { icon: Stamp,  text: 'Doganim & Inspektim' },
+  { icon: Truck,  text: 'Transport deri në Kosovë' },
+  { icon: Wallet, text: 'Pagesa në Kosovë' },
 ];
 
 const TRUST_CHECKLIST = [
@@ -217,7 +217,7 @@ export default function Home() {
               <p className="text-[11px] uppercase tracking-widest text-red-400 font-semibold font-mono mb-2">
                 Rezultate për
               </p>
-              <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight leading-none flex items-center gap-3 text-white">
+              <h1 className="font-display text-2xl md:text-4xl font-extrabold tracking-tight leading-none flex items-center gap-3 text-white">
                 "{keyword}"
                 <button onClick={clearSearch} className="p-1 rounded-full hover:bg-red-500/10 text-gray-300 hover:text-red-400 transition-all">
                   <X className="w-5 h-5" />
@@ -234,15 +234,14 @@ export default function Home() {
               <p className="text-[11px] uppercase tracking-widest text-red-400 font-semibold mb-3 font-mono">
                 Tregti direkte · Korea Jugore
               </p>
-              <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-none text-white">
+              <h1 className="font-display text-4xl md:text-6xl font-extrabold tracking-tight leading-none text-white">
                 {total != null ? (
-                  <><span className="font-mono">{total.toLocaleString('de-DE')}</span><span className="font-display uppercase text-red-500"> makina</span></>
+                  <><span className="font-mono">{total.toLocaleString('de-DE')}</span><span className="uppercase text-red-500"> makina</span></>
                 ) : (
                   <span className="animate-pulse text-gray-500">Duke ngarkuar...</span>
                 )}
               </h1>
               <p className="text-sm md:text-base mt-3 text-gray-300 max-w-md">Çmimet përfshijnë transport deri në port · all-in</p>
-              <p className="text-xs mt-2 text-gray-400">{BRAND.tagline}</p>
             </>
           )}
         </div>
@@ -266,27 +265,31 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Trust + logistics chips — combined into one pill-badge row below the
-          filters; red chips are marketing reassurance, graphite chips are
-          operational facts (location/customs/transport/payment). */}
+      {/* Trust checklist — red pill row, quick reassurance below the filters. */}
       <div style={{ borderBottom: '1px solid var(--border-lo)', background: 'var(--bg-card2)' }}>
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex flex-wrap items-center justify-center sm:justify-start gap-2">
           {TRUST_CHECKLIST.map(([Icon, text]) => (
             <span key={text}
                   className="inline-flex items-center gap-1.5 pl-2 pr-3 py-1 rounded-full text-[11px] sm:text-xs font-medium"
-                  style={{ background: 'rgba(196,34,46,0.08)', border: '1px solid rgba(196,34,46,0.18)', color: 'var(--text-2)' }}>
+                  style={{ background: 'rgba(181,9,9,0.08)', border: '1px solid rgba(181,9,9,0.18)', color: 'var(--text-2)' }}>
               <Icon className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />{text}
             </span>
           ))}
-          {INFO_BLOCKS.map(({ code, icon: Icon, text }) => (
-            <span key={code}
-                  className="inline-flex items-center gap-1.5 pl-2 pr-3 py-1 rounded-full text-[11px] sm:text-xs font-medium"
-                  style={{ background: 'rgba(21,23,27,0.05)', border: '1px solid rgba(21,23,27,0.12)', color: 'var(--text-2)' }}>
-              <Icon className="w-3.5 h-3.5 text-graphite flex-shrink-0" />
-              <span className="font-mono font-semibold text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-4)' }}>{code}</span>
-              {text}
-            </span>
-          ))}
+        </div>
+      </div>
+
+      {/* Operational facts — plain stacked list, deliberately quiet/graphite
+          so it reads as logistics info rather than marketing. */}
+      <div style={{ borderBottom: '1px solid var(--border-lo)' }}>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+          <ul className="space-y-1.5">
+            {INFO_BLOCKS.map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-center gap-2 text-sm pl-3" style={{ borderLeft: '2px solid #15171B', color: 'var(--text-2)' }}>
+                <Icon className="w-3.5 h-3.5 text-graphite flex-shrink-0" />
+                {text}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
@@ -381,7 +384,7 @@ export default function Home() {
               <p className="text-[11px] uppercase tracking-widest text-red-500/70 font-semibold font-mono mb-2">
                 Avantazhi ynë
               </p>
-              <h2 className="text-2xl font-extrabold tracking-tight" style={{ color: 'var(--text-1)' }}>
+              <h2 className="font-display text-2xl font-extrabold tracking-tight" style={{ color: 'var(--text-1)' }}>
                 Pse të na zgjidhni ne?
               </h2>
               <p className="text-sm mt-2 max-w-lg mx-auto" style={{ color: 'var(--text-3)' }}>
@@ -393,7 +396,7 @@ export default function Home() {
                 <div key={title}
                   className="rounded-2xl p-5 transition-all group"
                   style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(196,34,46,0.25)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(181,9,9,0.25)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
                 >
                   <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center mb-3 group-hover:bg-red-500/15 transition-colors">
@@ -422,7 +425,7 @@ export default function Home() {
             <p className="text-[11px] uppercase tracking-widest text-red-500/70 font-semibold font-mono mb-3">
               Avantazhi ynë
             </p>
-            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight" style={{ color: 'var(--text-1)' }}>
+            <h2 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight" style={{ color: 'var(--text-1)' }}>
               Pse të na zgjidhni ne?
             </h2>
             <p className="text-sm mt-3 max-w-xl mx-auto" style={{ color: 'var(--text-3)' }}>
@@ -435,7 +438,7 @@ export default function Home() {
               <div key={title}
                 className="rounded-2xl p-6 transition-all group"
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(196,34,46,0.25)'; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(181,9,9,0.25)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
               >
                 <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center mb-4 group-hover:bg-red-500/15 transition-colors">

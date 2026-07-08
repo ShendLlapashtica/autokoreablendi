@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,7 +6,7 @@
 
 /* ── CSS variables — light glassmorphic theme ── */
 :root {
-  --bg-page:    #FFFFFF;
+  --bg-page:    linear-gradient(180deg, #FAFAFB 0%, #EEEEF0 100%);
   --bg-card:    #FFFFFF;
   --bg-card2:   #F8F9FA;
   --bg-input:   rgba(0,0,0,0.03);
@@ -24,7 +24,8 @@
   *, *::before, *::after { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body {
-    background-color: var(--bg-page);
+    background: var(--bg-page);
+    background-attachment: fixed;
     color: var(--text-1);
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -40,7 +41,7 @@
   .font-mono { font-family: 'JetBrains Mono', monospace; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-  .bg-page  { background-color: var(--bg-page); }
+  .bg-page  { background: var(--bg-page); }
   .bg-card  { background-color: var(--bg-card); }
   .bg-card2 { background-color: var(--bg-card2); }
   .text-primary   { color: var(--text-1); }
@@ -59,10 +60,10 @@
     @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-red-500
            hover:bg-red-600 active:scale-95 text-white font-bold rounded-lg
            transition-all duration-150 disabled:opacity-40 select-none;
-    box-shadow: 0 4px 14px rgba(196,34,46,0.28);
+    box-shadow: 0 4px 14px rgba(181,9,9,0.28);
   }
   .btn-primary:hover {
-    box-shadow: 0 6px 20px rgba(196,34,46,0.4);
+    box-shadow: 0 6px 20px rgba(181,9,9,0.4);
   }
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2.5

@@ -131,7 +131,7 @@ function Line({ label, val, accent, bold, muted }) {
     <div className="flex justify-between text-sm">
       <span style={{ color: muted ? 'var(--text-4)' : 'var(--text-3)' }}>{label}</span>
       <span className={`font-mono font-semibold ${bold ? 'text-base' : ''}`}
-            style={{ color: bold ? 'var(--text-1)' : accent ? '#C4222E' : 'var(--text-2)' }}>
+            style={{ color: bold ? 'var(--text-1)' : accent ? '#B50909' : 'var(--text-2)' }}>
         {val}
       </span>
     </div>

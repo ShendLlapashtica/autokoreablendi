@@ -6,10 +6,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
         <div>
           <img src={BRAND.logoPath} alt={BRAND.name} className="h-16 w-auto" />
-          <p className="text-xs font-semibold tracking-wide mt-3" style={{ color: 'var(--text-3)' }}>
-            {BRAND.tagline}
-          </p>
-          <p className="text-sm mt-3" style={{ color: 'var(--text-2)' }}>
+          <p className="text-sm mt-4" style={{ color: 'var(--text-2)' }}>
             📍 {BRAND.address.line}
           </p>
           <a

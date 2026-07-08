@@ -37,7 +37,7 @@ function Row({ label, value, mono, highlight }) {
     <div className="flex items-start py-2.5" style={{ borderBottom: '1px solid var(--border-lo)' }}>
       <span className="text-xs w-40 flex-shrink-0 pt-0.5" style={{ color: 'var(--text-3)' }}>{label}</span>
       <span className={`text-sm font-medium ${mono ? 'font-mono text-xs' : ''}`}
-        style={{ color: highlight ? '#C4222E' : 'var(--text-2)' }}>
+        style={{ color: highlight ? '#B50909' : 'var(--text-2)' }}>
         {value}
       </span>
     </div>

@@ -59,25 +59,11 @@ export default function MobileMenu({ onClose, onOpenCalc, country, setCountry })
           </button>
         </nav>
 
-        {/* Why us */}
-        <div className="flex-1 px-4 py-3" style={{ borderTop: '1px solid var(--border-lo)' }}>
-          <p className="text-[10px] uppercase tracking-widest mb-3 font-mono font-semibold" style={{ color: 'var(--text-3)' }}>
-            Pse {BRAND.name}?
+        {/* Tagline */}
+        <div className="flex-1 flex items-center px-5 py-3" style={{ borderTop: '1px solid var(--border-lo)' }}>
+          <p className="font-display text-base font-bold leading-snug" style={{ color: 'var(--text-1)' }}>
+            {BRAND.tagline}
           </p>
-          <div className="space-y-2.5">
-            {[
-              ['✅', 'Çmim transparent — pa surpriza'],
-              ['🚢', 'Transport i siguruar deri te ju'],
-              ['🔍', 'Inspektim profesional në Kore'],
-              ['📋', 'Raport i plotë aksidentesh'],
-              ['⚡', 'Procedurë e shpejtë & e sigurt'],
-            ].map(([icon, text]) => (
-              <div key={text} className="flex items-start gap-2.5 text-xs" style={{ color: 'var(--text-2)' }}>
-                <span className="flex-shrink-0 text-sm">{icon}</span>
-                <span>{text}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Footer CTA */}
