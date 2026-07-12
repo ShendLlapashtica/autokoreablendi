@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { BRAND, waLink } from '../lib/brand.js';
 import { TRUST_CHECKLIST, INFO_BLOCKS } from '../lib/trustContent.js';
 
-export default function MobileMenu({ onClose, onOpenCalc, country, setCountry }) {
+export default function MobileMenu({ onClose, onOpenCalc }) {
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
@@ -23,28 +23,18 @@ export default function MobileMenu({ onClose, onOpenCalc, country, setCountry })
           </button>
         </div>
 
-        {/* Country toggle */}
+        {/* Delivery cities */}
         <div className="px-4 pt-4 pb-2">
           <p className="text-[10px] uppercase tracking-widest mb-2 font-mono font-semibold" style={{ color: 'var(--text-3)' }}>
-            Çmim për
+            Çmim deri në
           </p>
           <div className="flex rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
-            <button
-              onClick={() => setCountry('AL')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all
-                ${country === 'AL' ? 'bg-red-600 text-white' : ''}`}
-              style={country !== 'AL' ? { color: 'var(--text-2)' } : {}}
-            >
+            <span className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold bg-red-600 text-white">
               🇦🇱 Durrës
-            </button>
-            <button
-              onClick={() => setCountry('XK')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all
-                ${country === 'XK' ? 'bg-red-600 text-white' : ''}`}
-              style={country !== 'XK' ? { color: 'var(--text-2)' } : {}}
-            >
+            </span>
+            <span className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold" style={{ color: 'var(--text-2)' }}>
               🇽🇰 Prishtinë
-            </button>
+            </span>
           </div>
         </div>
 

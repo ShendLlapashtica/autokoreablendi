@@ -21,7 +21,7 @@ export const BRAND = {
     mapsEmbed: 'https://www.google.com/maps?q=Rr.+Hasan+Prishtina,+Gadime+e+Ul%C3%ABt+14000&output=embed',
   },
 
-  siteUrl: 'https://auto-korea-blendi.vercel.app',
+  siteUrl: 'https://autokoreablendi.com',
 };
 
 export function waLink(msg) {

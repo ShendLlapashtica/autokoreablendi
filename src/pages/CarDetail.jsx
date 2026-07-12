@@ -8,8 +8,7 @@ import {
 import ImageGallery from '../components/ImageGallery.jsx';
 import CarCard from '../components/CarCard.jsx';
 import {
-  carYear, manwonToEur, durresPrice, pristinePrice,
-  fmtEur, fmtKm, allPhotoUrls, tr, trCity,
+  carYear, fmtEur, fmtKm, allPhotoUrls, tr, trCity, customsEstimate,
 } from '../lib/utils.js';
 import { translateFuel, translateTrans, translateOption, translateColor } from '../lib/translations.js';
 import { useCountry } from '../contexts/CountryContext.jsx';
@@ -47,7 +46,7 @@ function Row({ label, value, mono, highlight }) {
 export default function CarDetail() {
   const { id }    = useParams();
   const { state } = useLocation();
-  const { priceFor, country } = useCountry();
+  const { priceFor, secondaryPriceFor } = useCountry();
 
   // useState initializer runs fresh on each mount (guaranteed by key={id} in App.jsx)
   const [car, setCar]           = useState(state?.car || null);
@@ -131,10 +130,9 @@ export default function CarDetail() {
   const length       = car.Spec?.Length;
   const width        = car.Spec?.Width;
 
-  const eurBase  = manwonToEur(car.Price);
-  const eurMain  = priceFor(car.Price);
-  const eurOther = country === 'AL' ? pristinePrice(car.Price) : durresPrice(car.Price);
-  const otherCity = country === 'AL' ? 'Prishtinë' : 'Durrës';
+  const eurDurres    = priceFor(car.Price);
+  const eurPrishtina = secondaryPriceFor(car.Price);
+  const eurDogana    = eurPrishtina > 0 ? customsEstimate(eurPrishtina) : 0;
 
   const resolvedAccidentCount = car.AccidentCount ?? car.AccidentHistoryCount ?? null;
   const resolvedOwnerCount    = car.OwnerCount ?? car.OwnerChangeCount ?? car.OwnerChanges ?? null;
@@ -183,19 +181,23 @@ export default function CarDetail() {
               <div className="flex flex-col sm:flex-row sm:items-center gap-5">
                 {/* Main price block */}
                 <div className="flex-1">
-                  <p className="text-[10px] uppercase tracking-widest font-semibold mb-1 font-mono" style={{ color: 'var(--text-3)' }}>
-                    Çmimi deri në {country === 'AL' ? 'Durrës' : 'Prishtinë'} 🇽🇰
-                  </p>
                   <p className="text-4xl font-extrabold tracking-tight font-mono" style={{ color: 'var(--text-1)' }}>
-                    {eurBase > 0 ? fmtEur(eurMain) : '—'}
+                    {eurPrishtina > 0 ? fmtEur(eurPrishtina) : '—'}
                   </p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>Transport + doganë të përfshira</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>Deri në Prishtinë</p>
+
+                  <p className="text-2xl font-extrabold tracking-tight font-mono mt-3" style={{ color: 'var(--text-1)' }}>
+                    {eurDogana > 0 ? fmtEur(eurDogana) : '—'}
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>Dogana përafërsisht</p>
+
                   <div className="flex flex-wrap gap-4 mt-3 text-xs" style={{ color: 'var(--text-3)' }}>
-                    <span>🇰🇷 Korea: <strong style={{ color: 'var(--text-2)' }}>{eurBase > 0 ? fmtEur(eurBase) : '—'}</strong></span>
-                    <span>📍 {otherCity}: <strong style={{ color: 'var(--text-2)' }}>{eurBase > 0 ? fmtEur(eurOther) : '—'}</strong></span>
+                    <span>📍 Durrës: <strong style={{ color: 'var(--text-2)' }}>{eurDurres > 0 ? fmtEur(eurDurres) : '—'}</strong></span>
                   </div>
-                  <p className="text-[10px] mt-2" style={{ color: 'var(--text-4)' }}>
-                    * Çmimi bazë + transport + doganë. Për çmim final kontaktoni.
+
+                  <p className="text-[11px] font-semibold mt-3 leading-relaxed" style={{ color: '#B50909' }}>
+                    Dogana llogaritet sipas vlerës së automjetit, në përputhje me rregulloren e Doganës së Kosovës.
+                    Në rast rivlerësimi nga autoritetet doganore, kompania jonë nuk mban përgjegjësi.
                   </p>
                 </div>
                 {/* CTA buttons */}

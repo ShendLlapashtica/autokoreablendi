@@ -1,62 +1,16 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
-import { useCountry } from '../contexts/CountryContext.jsx';
 import CustomsCalculator from './CustomsCalculator.jsx';
 import MobileMenu from './MobileMenu.jsx';
-import { BRANDS } from '../lib/brandModels.js';
 import { BRAND, waLink } from '../lib/brand.js';
-
-const FUEL_KEYWORDS = {
-  'diesel': 'diesel', 'naftë': 'diesel', 'nafta': 'diesel',
-  'benzinë': 'gasoline', 'benzina': 'gasoline', 'benzine': 'gasoline', 'petrol': 'gasoline', 'gasoline': 'gasoline',
-  'elektrik': 'electric', 'electric': 'electric', 'ev': 'electric',
-  'hibrid': 'hybrid', 'hybrid': 'hybrid',
-  'lpg': 'lpg',
-};
-
-function parseSearchQuery(q) {
-  const parts   = q.trim().split(/\s+/);
-  const params  = {};
-
-  // Detect year(s)
-  const yearParts = parts.filter(p => /^(19|20)\d{2}$/.test(p));
-  const nonYear   = parts.filter(p => !/^(19|20)\d{2}$/.test(p));
-  if (yearParts.length === 1) { params.yearFrom = yearParts[0]; params.yearTo = yearParts[0]; }
-  if (yearParts.length >= 2)  { params.yearFrom = String(Math.min(...yearParts.map(Number))); params.yearTo = String(Math.max(...yearParts.map(Number))); }
-
-  // Detect fuel
-  for (const [kw, val] of Object.entries(FUEL_KEYWORDS)) {
-    if (nonYear.some(p => p.toLowerCase() === kw)) { params.fuel = val; break; }
-  }
-
-  // Detect brand (try longest match first)
-  const text = nonYear.join(' ').toLowerCase();
-  let matched = '';
-  for (let len = 4; len >= 1; len--) {
-    const candidate = nonYear.slice(0, len).join(' ');
-    if (BRANDS.some(b => b.toLowerCase() === candidate.toLowerCase())) {
-      matched = BRANDS.find(b => b.toLowerCase() === candidate.toLowerCase());
-      break;
-    }
-  }
-  if (matched) {
-    params.brand = matched;
-    const brandWordCount = matched.split(/\s+/).length;
-    const afterBrand = nonYear.slice(brandWordCount);
-    const modelWords = afterBrand.filter(w => !FUEL_KEYWORDS[w.toLowerCase()]);
-    if (modelWords.length > 0) params.model = modelWords.join(' ');
-  }
-
-  return params;
-}
+import { parseSearchQuery } from '../lib/search.js';
 
 export default function Header() {
   const [calc, setCalc]         = useState(false);
   const [menu, setMenu]         = useState(false);
   const [search, setSearch]     = useState('');
   const [showSearch, setShowSearch] = useState(false);
-  const { country, setCountry } = useCountry();
   const navigate                = useNavigate();
 
   function handleSearch(e) {
@@ -99,26 +53,6 @@ export default function Header() {
           </form>
 
           <div className="flex items-center gap-1 ml-auto">
-
-            {/* AL / XK flags */}
-            <div className="hidden sm:flex items-center rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
-              <button
-                onClick={() => setCountry('AL')}
-                title="Shqipëri – çmim Durrës"
-                className={`px-2.5 py-1.5 text-base leading-none transition-all
-                  ${country === 'AL' ? 'bg-red-600 shadow-[0_0_0_1px_rgba(181,9,9,0.4)]' : 'hover:bg-card2'}`}
-              >
-                🇦🇱
-              </button>
-              <button
-                onClick={() => setCountry('XK')}
-                title="Kosovë – çmim Prishtinë"
-                className={`px-2.5 py-1.5 text-base leading-none transition-all
-                  ${country === 'XK' ? 'bg-red-600 shadow-[0_0_0_1px_rgba(181,9,9,0.4)]' : 'hover:bg-card2'}`}
-              >
-                🇽🇰
-              </button>
-            </div>
 
             <a href={waLink()} target="_blank" rel="noopener noreferrer"
                className="hidden sm:inline-flex btn-primary text-xs py-1.5 px-3">
@@ -177,8 +111,6 @@ export default function Header() {
         <MobileMenu
           onClose={() => setMenu(false)}
           onOpenCalc={() => { setMenu(false); setCalc(true); }}
-          country={country}
-          setCountry={setCountry}
         />
       )}
     </>

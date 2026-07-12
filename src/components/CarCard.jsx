@@ -44,7 +44,7 @@ export default function CarCard({ car }) {
   const [broken, setBroken] = useState(() => new Set());
   const [logoBroken, setLogoBroken] = useState(false);
   const fetchingRef = useRef(false);
-  const { priceFor, label } = useCountry();
+  const { priceFor, secondaryPriceFor, label, secondaryCityName } = useCountry();
 
   // Keep each surviving photo paired with its original index so a broken
   // image can be marked (and skipped) without losing track of which one it was.
@@ -76,6 +76,7 @@ export default function CarCard({ car }) {
 
   const year   = carYear(car);
   const price  = priceFor(car.Price);
+  const secondaryPrice = secondaryPriceFor(car.Price);
   const fuel   = translateFuel(car.FuelType);
   const trans  = translateTrans(car.Transmission);
   const color  = translateColor(car.Color);
@@ -245,6 +246,11 @@ export default function CarCard({ car }) {
               {price > 0 ? fmtEur(price) : '—'}
             </p>
             <p className="text-[10px] mt-1.5" style={{ color: 'var(--text-3)' }}>{label}</p>
+            {secondaryPrice > 0 && (
+              <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-4)' }}>
+                📍 {secondaryCityName}: {fmtEur(secondaryPrice)}
+              </p>
+            )}
           </div>
           <span className="flex items-center gap-1 text-xs font-bold text-white px-3 py-2 rounded-lg bg-red-600 group-hover:bg-red-500 transition-colors">
             SHIKO →

@@ -1,27 +1,23 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext } from 'react';
 import { durresPrice, pristinePrice } from '../lib/utils.js';
 
 const Ctx = createContext(null);
 
 export function CountryProvider({ children }) {
-  const [country, setCountryState] = useState(
-    () => localStorage.getItem('autovg_country') || 'XK'
-  );
-
-  function setCountry(c) {
-    setCountryState(c);
-    localStorage.setItem('autovg_country', c);
-  }
-
   function priceFor(manwon) {
-    return country === 'AL' ? durresPrice(manwon) : pristinePrice(manwon);
+    return durresPrice(manwon);
   }
 
-  const label    = country === 'AL' ? 'deri në Durrës · all-in' : 'deri në Prishtinë · all-in';
-  const cityName = country === 'AL' ? 'Durrës' : 'Prishtinë';
+  function secondaryPriceFor(manwon) {
+    return pristinePrice(manwon);
+  }
+
+  const label           = 'deri në Durrës · all-in';
+  const cityName        = 'Durrës';
+  const secondaryCityName = 'Prishtinë';
 
   return (
-    <Ctx.Provider value={{ country, setCountry, priceFor, label, cityName }}>
+    <Ctx.Provider value={{ priceFor, secondaryPriceFor, label, cityName, secondaryCityName }}>
       {children}
     </Ctx.Provider>
   );

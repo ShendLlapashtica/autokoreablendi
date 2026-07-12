@@ -1,6 +1,6 @@
 const KRW_TO_EUR = 0.00067;
-const DELIVERY_DURRES = 350;
-const DELIVERY_PRISHTINA = 700;
+const DELIVERY_DURRES = 850;
+const DELIVERY_PRISHTINA = 1200;
 
 export { DELIVERY_DURRES, DELIVERY_PRISHTINA };
 
@@ -248,6 +248,13 @@ export function manwonToEur(manwon) {
 
 export function durresPrice(manwon) { return manwonToEur(manwon) + DELIVERY_DURRES; }
 export function pristinePrice(manwon) { return manwonToEur(manwon) + DELIVERY_PRISHTINA; }
+
+// Rough customs estimate shown alongside the Prishtinë price — ~40% of the
+// delivered price, rounded to the nearest €50 for a clean display figure.
+export function customsEstimate(eurPrice) {
+  if (!eurPrice) return 0;
+  return Math.round((eurPrice * 0.40) / 50) * 50;
+}
 export function fmtEur(amount) { return '€' + Math.round(amount).toLocaleString('de-DE'); }
 export function fmtKm(km) {
   if (!km && km !== 0) return '—';

@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { X, SlidersHorizontal } from 'lucide-react';
+import { X, SlidersHorizontal, Search } from 'lucide-react';
 import CarCard from '../components/CarCard.jsx';
 import Filters from '../components/Filters.jsx';
 import { waLink } from '../lib/brand.js';
 import { TRUST_CHECKLIST, INFO_BLOCKS } from '../lib/trustContent.js';
 import { BRANDS } from '../lib/brandModels.js';
 import { getBrandLogo } from '../lib/logos.js';
+import { parseSearchQuery } from '../lib/search.js';
 
 function MarqueeItem({ brand }) {
   const [broken, setBroken] = useState(false);
@@ -81,6 +82,7 @@ export default function Home() {
   const [done, setDone]       = useState(false);
   const [error, setError]     = useState(null);
   const [filters, setFilters] = useState(() => filtersFromParams(searchParams));
+  const [heroSearch, setHeroSearch] = useState(keyword);
 
   // Sticky filter button state
   const [filtersVisible, setFiltersVisible]     = useState(true);
@@ -96,6 +98,23 @@ export default function Home() {
   useEffect(() => {
     setFilters(filtersFromParams(searchParams));
   }, [searchParams]);
+
+  // Keep the hero search box in sync with the URL keyword (e.g. cleared via the X button)
+  useEffect(() => {
+    setHeroSearch(keyword);
+  }, [keyword]);
+
+  function handleHeroSearch(e) {
+    e.preventDefault();
+    const q = heroSearch.trim();
+    if (!q) return;
+    const parsed = parseSearchQuery(q);
+    if (Object.keys(parsed).length > 0) {
+      setSearchParams(parsed, { replace: false });
+    } else {
+      setSearchParams({ q }, { replace: false });
+    }
+  }
 
   // Watch when filter row scrolls out of view → show desktop floating button
   useEffect(() => {
@@ -247,6 +266,41 @@ export default function Home() {
             </>
           )}
         </div>
+      </div>
+
+      {/* Seamless glass search bar — floats over the seam between the hero
+          photo and the red-topped filter bar, sharing the same red frame
+          treatment as the banner below it. */}
+      <div className="relative z-20 max-w-7xl mx-auto px-4 md:px-8" style={{ marginTop: '-24px', marginBottom: '-24px' }}>
+        <form onSubmit={handleHeroSearch} className="relative mx-auto max-w-xl">
+          <div className="absolute -inset-[2px] rounded-2xl pointer-events-none"
+               style={{
+                 background: 'linear-gradient(90deg,#7A0606,#B50909,#D34F4F,#B50909,#7A0606)',
+                 opacity: 0.55,
+                 filter: 'blur(8px)',
+               }} />
+          <div className="relative flex items-center gap-2 rounded-2xl pl-4 pr-2 py-2 glass-card"
+               style={{ borderColor: 'rgba(181,9,9,0.4)', boxShadow: '0 10px 30px rgba(181,9,9,0.18), 0 4px 6px rgba(0,0,0,0.06)' }}>
+            <Search className="w-4 h-4 flex-shrink-0 text-red-500" />
+            <input
+              type="text"
+              value={heroSearch}
+              onChange={e => setHeroSearch(e.target.value)}
+              placeholder="BMW, Hyundai Tucson, 2020..."
+              className="flex-1 bg-transparent outline-none text-sm placeholder:text-gray-400 min-w-0"
+              style={{ color: 'var(--text-1)' }}
+            />
+            {heroSearch && (
+              <button type="button" onClick={() => setHeroSearch('')}
+                      className="p-1 rounded-full text-gray-400 hover:text-red-400 transition-colors flex-shrink-0">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <button type="submit" className="btn-primary text-xs py-2 px-4 flex-shrink-0">
+              Kërko
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Filters — full-width glass bar directly below the hero */}

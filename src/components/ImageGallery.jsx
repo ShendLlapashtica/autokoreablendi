@@ -59,13 +59,13 @@ export default function ImageGallery({ photos = [], alt = '' }) {
 
       {/* Thumbnails */}
       {valid.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 mt-2 scrollbar-hide">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 mt-2 scrollbar-hide">
           {valid.map((src, i) => (
             <button
               key={i}
               onClick={() => setActive(i)}
-              className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all duration-150
-                ${i === active ? 'border-red-500' : 'border-white/10 opacity-60 hover:opacity-100'}`}
+              className={`flex-shrink-0 w-28 h-20 rounded-lg overflow-hidden border-2 transition-all duration-150
+                ${i === active ? 'border-red-500' : 'border-white/15 opacity-90 hover:opacity-100'}`}
             >
               <img src={src} alt="" className="w-full h-full object-cover"
                 onError={() => setErrors(e => ({ ...e, [i]: true }))} />
