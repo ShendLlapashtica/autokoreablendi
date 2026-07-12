@@ -23,16 +23,13 @@ export default function MobileMenu({ onClose, onOpenCalc }) {
           </button>
         </div>
 
-        {/* Delivery cities */}
+        {/* Delivery city */}
         <div className="px-4 pt-4 pb-2">
           <p className="text-[10px] uppercase tracking-widest mb-2 font-mono font-semibold" style={{ color: 'var(--text-3)' }}>
             Çmim deri në
           </p>
           <div className="flex rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
             <span className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold bg-red-600 text-white">
-              🇦🇱 Durrës
-            </span>
-            <span className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold" style={{ color: 'var(--text-2)' }}>
               🇽🇰 Prishtinë
             </span>
           </div>

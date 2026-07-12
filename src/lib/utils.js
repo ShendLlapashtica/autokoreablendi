@@ -1,8 +1,7 @@
 const KRW_TO_EUR = 0.00067;
-const DELIVERY_DURRES = 850;
 const DELIVERY_PRISHTINA = 1200;
 
-export { DELIVERY_DURRES, DELIVERY_PRISHTINA };
+export { DELIVERY_PRISHTINA };
 
 export const MANUFACTURER_MAP = {
   '현대': 'Hyundai', '기아': 'Kia', '벤츠': 'Mercedes-Benz',
@@ -246,7 +245,6 @@ export function manwonToEur(manwon) {
   return Math.round(manwon * 10000 * KRW_TO_EUR);
 }
 
-export function durresPrice(manwon) { return manwonToEur(manwon) + DELIVERY_DURRES; }
 export function pristinePrice(manwon) { return manwonToEur(manwon) + DELIVERY_PRISHTINA; }
 
 // Rough customs estimate shown alongside the Prishtinë price — ~40% of the

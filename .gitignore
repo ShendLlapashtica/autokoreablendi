@@ -5,3 +5,6 @@ dist/
 
 .vercel
 .env*
+
+.vercel
+.env*

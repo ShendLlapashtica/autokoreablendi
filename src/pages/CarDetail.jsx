@@ -46,7 +46,7 @@ function Row({ label, value, mono, highlight }) {
 export default function CarDetail() {
   const { id }    = useParams();
   const { state } = useLocation();
-  const { priceFor, secondaryPriceFor } = useCountry();
+  const { priceFor } = useCountry();
 
   // useState initializer runs fresh on each mount (guaranteed by key={id} in App.jsx)
   const [car, setCar]           = useState(state?.car || null);
@@ -130,8 +130,7 @@ export default function CarDetail() {
   const length       = car.Spec?.Length;
   const width        = car.Spec?.Width;
 
-  const eurDurres    = priceFor(car.Price);
-  const eurPrishtina = secondaryPriceFor(car.Price);
+  const eurPrishtina = priceFor(car.Price);
   const eurDogana    = eurPrishtina > 0 ? customsEstimate(eurPrishtina) : 0;
 
   const resolvedAccidentCount = car.AccidentCount ?? car.AccidentHistoryCount ?? null;
@@ -190,10 +189,6 @@ export default function CarDetail() {
                     {eurDogana > 0 ? fmtEur(eurDogana) : '—'}
                   </p>
                   <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>Dogana përafërsisht</p>
-
-                  <div className="flex flex-wrap gap-4 mt-3 text-xs" style={{ color: 'var(--text-3)' }}>
-                    <span>📍 Durrës: <strong style={{ color: 'var(--text-2)' }}>{eurDurres > 0 ? fmtEur(eurDurres) : '—'}</strong></span>
-                  </div>
 
                   <p className="text-[11px] font-semibold mt-3 leading-relaxed" style={{ color: '#B50909' }}>
                     Dogana llogaritet sipas vlerës së automjetit, në përputhje me rregulloren e Doganës së Kosovës.
