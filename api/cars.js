@@ -99,7 +99,7 @@ const MODEL_REVERSE = {
   'Malibu':    '말리부', 'Spark':    '스파크', 'Equinox': '이쿼녹스',
   'Trailblazer': '트레일블레이저', 'Cruze': '크루즈',
   'Camry':     '캠리',  'Corolla':  '코롤라', 'Prius':   '프리우스',
-  'RAV4':      '라브4', 'Highlander': '하이랜더',
+  'RAV4':      '라브4', 'Highlander': '하이랜더', 'Yaris': '야리스', 'Vitz': '야리스',
   'Accord':    '어코드', 'Civic':   '시빅',
   'Altima':    '알티마', 'Murano':   '무라노', 'Rogue':   '로그',
   'Outlander': '아웃랜더', 'Forester': '포레스터', 'Outback': '아웃백',
@@ -193,7 +193,11 @@ function parseKeyword(keyword) {
       if (rest) {
         const translit   = seriesTransliteration(rest);
         result.model      = translit ?? toEncarModel(rest);
-        result.remainder  = translit ?? rest;
+        // Use the resolved model value (Korean dictionary hit or transliterated
+        // series), not the raw English text — the substring fallback tokenizes
+        // against Encar's raw Hangul/passthrough-code fields, so English text
+        // like "yaris" would never match the real "야리스(비츠)" listing data.
+        result.remainder  = result.model;
         result.modelExact = !translit && isExactEncarModel(rest);
       }
       return result;
@@ -311,9 +315,20 @@ function matchScore(car, terms) {
   return score;
 }
 
+// Encar attaches a generation-code suffix to almost every Model facet value
+// (e.g. BMW 7 Series is never bare "7시리즈" — it's "7시리즈 (E65)",
+// "7시리즈 (F01)", "7시리즈 (G11)", "7시리즈 (G70)"), so an exact-match model
+// filter on the plain name always returns zero. This used to fall back to
+// sampling just the 500 most-recently-modified listings and keyword-scoring
+// them — which badly undercounts anything but the newest slice of a large,
+// popular, multi-generation model (verified live: BMW 7 Series showed ~40
+// cars this way vs 1000+ real listings on Encar itself). Fixed two-phase:
+// (1) scan a sample to discover every distinct real Model string that
+// contains the search term, then (2) re-query each discovered value as its
+// own exact Encar facet filter to get a true per-variant Count and a real
+// page of backing rows, instead of guessing from a small sample.
 async function substringSearch(keyword, manufacturer, offset, count, signal, extraParts = [], sortKey = 'ModifiedDate') {
   const scanParts = [...(manufacturer ? [`Manufacturer.${manufacturer}`] : []), ...extraParts];
-  const broad      = await runSearch(scanParts, 0, 500, signal, sortKey);
 
   // Split with the same rule matchScore uses on car fields (tokenize), so a
   // hyphenated term like "C-CLASS" lines up with Encar's "C-클래스" split
@@ -324,20 +339,53 @@ async function substringSearch(keyword, manufacturer, offset, count, signal, ext
   // (tier 4, score 1), so keeping them only helps precision here.
   const useTerms = tokenize(keyword);
 
-  const matched = broad.SearchResults
-    .map(car => ({ car, score: matchScore(car, useTerms) }))
-    .filter(x => x.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .map(x => x.car);
+  const broad = await runSearch(scanParts, 0, 1000, signal, sortKey);
+
+  // Discover the distinct real Model facet strings the term actually
+  // matches, keeping the best score seen for each (used for relevance sort
+  // on the "most recent" path, where there's no price to sort by instead).
+  const variantScores = new Map();
+  for (const car of broad.SearchResults) {
+    const score = matchScore(car, useTerms);
+    if (score > 0 && score > (variantScores.get(car.Model) ?? -1)) {
+      variantScores.set(car.Model, score);
+    }
+  }
+
+  if (variantScores.size === 0) {
+    return { Count: 0, SearchResults: [] };
+  }
+
+  // Each discovered variant gets its own real exact-facet query (in
+  // parallel) so its Count and rows come straight from Encar, not a sample.
+  const variantResults = await Promise.all(
+    [...variantScores.entries()].map(async ([modelValue, score]) => {
+      try {
+        const data = await runSearch([...scanParts, `Model.${modelValue}`], 0, 1000, signal, sortKey);
+        return { score, data };
+      } catch {
+        return null;
+      }
+    })
+  );
+
+  let totalCount = 0;
+  const rows = [];
+  for (const v of variantResults) {
+    if (!v) continue;
+    totalCount += v.data.Count;
+    for (const car of v.data.SearchResults) rows.push({ car, score: v.score });
+  }
 
   // A price sort was explicitly requested — it should win over relevance
   // ranking for the matched set, same as it does on the plain-filter path.
-  if (sortKey === 'PriceAsc')  matched.sort((a, b) => (a.Price ?? 0) - (b.Price ?? 0));
-  if (sortKey === 'PriceDesc') matched.sort((a, b) => (b.Price ?? 0) - (a.Price ?? 0));
+  if (sortKey === 'PriceAsc')       rows.sort((a, b) => (a.car.Price ?? 0) - (b.car.Price ?? 0));
+  else if (sortKey === 'PriceDesc') rows.sort((a, b) => (b.car.Price ?? 0) - (a.car.Price ?? 0));
+  else                              rows.sort((a, b) => b.score - a.score);
 
   return {
-    Count:         matched.length,
-    SearchResults: matched.slice(offset, offset + count),
+    Count:         totalCount,
+    SearchResults: rows.slice(offset, offset + count).map(x => x.car),
   };
 }
 
