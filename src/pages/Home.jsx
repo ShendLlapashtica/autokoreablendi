@@ -268,38 +268,28 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Seamless glass search bar — floats over the seam between the hero
-          photo and the red-topped filter bar, sharing the same red frame
-          treatment as the banner below it. */}
-      <div className="relative z-20 max-w-7xl mx-auto px-4 md:px-8" style={{ marginTop: '-24px', marginBottom: '-24px' }}>
-        <form onSubmit={handleHeroSearch} className="relative mx-auto max-w-xl">
-          <div className="absolute -inset-[2px] rounded-2xl pointer-events-none"
-               style={{
-                 background: 'linear-gradient(90deg,#7A0606,#B50909,#D34F4F,#B50909,#7A0606)',
-                 opacity: 0.55,
-                 filter: 'blur(8px)',
-               }} />
-          <div className="relative flex items-center gap-2 rounded-2xl pl-4 pr-2 py-2 glass-card"
-               style={{ borderColor: 'rgba(181,9,9,0.4)', boxShadow: '0 10px 30px rgba(181,9,9,0.18), 0 4px 6px rgba(0,0,0,0.06)' }}>
-            <Search className="w-4 h-4 flex-shrink-0 text-red-500" />
-            <input
-              type="text"
-              value={heroSearch}
-              onChange={e => setHeroSearch(e.target.value)}
-              placeholder="BMW, Hyundai Tucson, 2020..."
-              className="flex-1 bg-transparent outline-none text-sm placeholder:text-gray-400 min-w-0"
-              style={{ color: 'var(--text-1)' }}
-            />
-            {heroSearch && (
-              <button type="button" onClick={() => setHeroSearch('')}
-                      className="p-1 rounded-full text-gray-400 hover:text-red-400 transition-colors flex-shrink-0">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-            <button type="submit" className="btn-primary text-xs py-2 px-4 flex-shrink-0">
-              Kërko
+      {/* Hero search bar — plain input, sits flush in the normal page flow. */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+        <form onSubmit={handleHeroSearch} className="relative mx-auto max-w-xl flex items-center gap-2 rounded-lg pl-4 pr-2 py-2"
+              style={{ background: 'var(--bg-input)', border: '1px solid var(--border)' }}>
+          <Search className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-3)' }} />
+          <input
+            type="text"
+            value={heroSearch}
+            onChange={e => setHeroSearch(e.target.value)}
+            placeholder="BMW, Hyundai Tucson, 2020..."
+            className="flex-1 bg-transparent outline-none text-sm placeholder:text-gray-400 min-w-0"
+            style={{ color: 'var(--text-1)' }}
+          />
+          {heroSearch && (
+            <button type="button" onClick={() => setHeroSearch('')}
+                    className="p-1 rounded-full text-gray-400 hover:text-red-400 transition-colors flex-shrink-0">
+              <X className="w-3.5 h-3.5" />
             </button>
-          </div>
+          )}
+          <button type="submit" className="btn-primary text-xs py-2 px-4 flex-shrink-0">
+            Kërko
+          </button>
         </form>
       </div>
 
