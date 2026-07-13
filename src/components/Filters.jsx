@@ -31,9 +31,9 @@ const COLORS = [
 ];
 
 const SORTS = [
+  { val: '',          label: 'Më të fundit' },
   { val: 'priceAsc',  label: 'Çmimi: I ulët → I lartë' },
   { val: 'priceDesc', label: 'Çmimi: I lartë → I ulët' },
-  { val: '',          label: 'Më të fundit' },
 ];
 
 const YEARS = Array.from({ length: 21 }, (_, i) => String(2025 - i));
@@ -51,11 +51,11 @@ const PRICES = [5000, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 10
 const EMPTY = {
   manufacturer: '', model: '', fuel: '', transmission: '', color: '',
   yearFrom: '', yearTo: '', mileageTo: '', priceFrom: '', priceTo: '',
-  sort: 'priceAsc',
+  sort: '',
 };
 
-function Sel({ label, value, onChange, disabled, children, active: activeOverride }) {
-  const active = activeOverride ?? !!value;
+function Sel({ label, value, onChange, disabled, children }) {
+  const active = !!value;
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-[10px] uppercase tracking-wider font-mono font-semibold" style={{ color: 'var(--text-2)' }}>
@@ -141,7 +141,7 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
         <option value="">Pa limit</option>
         {PRICES.map(p => <option key={p} value={p}>{p.toLocaleString('de-DE')} €</option>)}
       </Sel>
-      <Sel label="Rendit" value={filters.sort} onChange={set('sort')} active={filters.sort !== 'priceAsc'}>
+      <Sel label="Rendit" value={filters.sort} onChange={set('sort')}>
         {SORTS.map(s => <option key={s.val} value={s.val}>{s.label}</option>)}
       </Sel>
       {hasFilters ? (
@@ -291,9 +291,9 @@ export default function Filters({ filters, onChange, forceOpen = false, onForceC
           {/* Sort */}
           <div className="relative">
             <select value={filters.sort} onChange={e => set('sort')(e.target.value)}
-                    data-active={filters.sort !== 'priceAsc'}
+                    data-active={!!filters.sort}
                     className="filter-select appearance-none text-xs rounded-lg pl-2.5 pr-6 py-1.5 font-medium"
-                    style={{ color: filters.sort !== 'priceAsc' ? '#B50909' : 'var(--text-2)' }}>
+                    style={{ color: filters.sort ? '#B50909' : 'var(--text-2)' }}>
               {SORTS.map(s => <option key={s.val} value={s.val}>{s.label}</option>)}
             </select>
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style={{ color: 'var(--text-4)' }} />

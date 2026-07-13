@@ -32,10 +32,9 @@ function MarqueeItem({ brand }) {
 }
 
 const PAGE_SIZE = 24;
-// Default listing order is cheapest-first — a plain chronological ("most
-// recent") feed surfaces thin/undocumented listings ahead of well-priced
-// real cars, which is exactly what this sort default is meant to avoid.
-const DEFAULT_SORT = 'priceAsc';
+// Default listing order is Encar's own "most recent" feed — price sorting
+// (low→high or high→low) is opt-in via the Rendit dropdown, not the default.
+const DEFAULT_SORT = '';
 const EMPTY_FILTERS = {
   manufacturer: '', model: '', fuel: '', transmission: '', color: '',
   yearFrom: '', yearTo: '', mileageTo: '', priceFrom: '', priceTo: '',
