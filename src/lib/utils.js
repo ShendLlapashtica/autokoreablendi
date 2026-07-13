@@ -7,8 +7,9 @@ export const MANUFACTURER_MAP = {
   '현대': 'Hyundai', '기아': 'Kia', '벤츠': 'Mercedes-Benz',
   '메르세데스-벤츠': 'Mercedes-Benz', '아우디': 'Audi', '폭스바겐': 'Volkswagen',
   '포르쉐': 'Porsche', '렉서스': 'Lexus', '제네시스': 'Genesis',
-  '쌍용': 'SsangYong', '르노삼성': 'Renault Samsung', '르노': 'Renault',
-  '쉐보레': 'Chevrolet', '볼보': 'Volvo', '랜드로버': 'Land Rover',
+  '쌍용': 'KG Mobility', 'KG모빌리티(쌍용)': 'KG Mobility',
+  '르노삼성': 'Renault Korea', '르노코리아(삼성)': 'Renault Korea', '르노': 'Renault',
+  '쉐보레': 'Chevrolet', '쉐보레(GM대우)': 'Chevrolet', '볼보': 'Volvo', '랜드로버': 'Land Rover',
   '미니': 'Mini', '도요타': 'Toyota', '혼다': 'Honda',
   '마세라티': 'Maserati', '페라리': 'Ferrari', '람보르기니': 'Lamborghini',
   '벤틀리': 'Bentley', '롤스로이스': 'Rolls-Royce', '푸조': 'Peugeot',
@@ -17,23 +18,6 @@ export const MANUFACTURER_MAP = {
   '캐딜락': 'Cadillac', '크라이슬러': 'Chrysler', '지프': 'Jeep',
   '포드': 'Ford', '스바루': 'Subaru', '미쓰비시': 'Mitsubishi',
   '시트': 'Seat', '알파로메오': 'Alfa Romeo', '피아트': 'Fiat',
-};
-
-// English → Korean for Encar API filter (reverse of MANUFACTURER_MAP)
-export const MANUFACTURER_REVERSE = {
-  'Hyundai': '현대', 'Kia': '기아', 'Mercedes-Benz': '벤츠',
-  'Audi': '아우디', 'Volkswagen': '폭스바겐', 'Porsche': '포르쉐',
-  'Lexus': '렉서스', 'Genesis': '제네시스', 'SsangYong': '쌍용',
-  'Renault Samsung': '르노삼성', 'Renault': '르노', 'Chevrolet': '쉐보레',
-  'Volvo': '볼보', 'Land Rover': '랜드로버', 'Mini': '미니',
-  'Toyota': '도요타', 'Honda': '혼다', 'Maserati': '마세라티',
-  'Ferrari': '페라리', 'Lamborghini': '람보르기니', 'Bentley': '벤틀리',
-  'Rolls-Royce': '롤스로이스', 'Peugeot': '푸조', 'Jaguar': '재규어',
-  'Nissan': '닛산', 'Infiniti': '인피니티', 'Lincoln': '링컨',
-  'Cadillac': '캐딜락', 'Jeep': '지프', 'Ford': '포드',
-  'Subaru': '스바루', 'Mitsubishi': '미쓰비시',
-  // Non-Korean brands that stay as-is in Encar
-  'BMW': 'BMW', 'Alfa Romeo': '알파로메오', 'Fiat': '피아트',
 };
 
 // Korean model name → English display name

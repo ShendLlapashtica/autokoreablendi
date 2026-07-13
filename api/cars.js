@@ -39,11 +39,20 @@ const MANUFACTURER_REVERSE = {
   'Porsche':         '포르쉐',
   'Lexus':           '렉서스',
   'Genesis':         '제네시스',
-  'SsangYong':       '쌍용',
-  'Ssangyong':       '쌍용',
-  'Renault Samsung': '르노삼성',
+  // KG Mobility (rebranded from SsangYong Motor) and Renault Korea
+  // (rebranded from Renault Samsung) — Encar now stores these under a
+  // compound "NewName(OldName)" facet value; the plain legacy Korean name
+  // returns zero results. Old English aliases kept for back-compat.
+  'KG Mobility':     'KG모빌리티(쌍용)',
+  'SsangYong':       'KG모빌리티(쌍용)',
+  'Ssangyong':       'KG모빌리티(쌍용)',
+  'Renault Korea':   '르노코리아(삼성)',
+  'Renault Samsung': '르노코리아(삼성)',
   'Renault':         '르노',
-  'Chevrolet':       '쉐보레',
+  // GM Korea's domestic-market Chevrolet listings are tagged with a
+  // "(GM대우)" suffix (formerly GM Daewoo) — this is the dominant facet
+  // value; a small number of imported Chevrolets remain under plain 쉐보레.
+  'Chevrolet':       '쉐보레(GM대우)',
   'Volvo':           '볼보',
   'Land Rover':      '랜드로버',
   'Mini':            '미니',
