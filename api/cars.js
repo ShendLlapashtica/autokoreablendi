@@ -6,11 +6,14 @@
 // src/lib/utils.js's KRW_TO_EUR (0.00067) * 10,000 = 6.7 EUR per manwon.
 const EUR_PER_MANWON = 6.7;
 
-// A hard floor below the frontend's own filter range: 200만원 (~€1,340 base)
-// verified live to cut only ~0.3% of normal-sale+inspected listings (638 of
-// 213,055) — just enough to drop near-worthless high-mileage relics (e.g. a
-// verified real 45만원/~€300 Jeep) without touching genuinely affordable cars.
-const MIN_PRICE_MANWON = 200;
+// A hard floor below the frontend's own filter range. 201만원 rather than 200 —
+// verified live that exactly 200만원 (2,000,000 KRW, ~€1,340) is a placeholder/
+// "call for price" value shared by ~80 otherwise-unrelated listings (random
+// makes, models, mileages, years, all pinned to the identical figure), which
+// floated straight to the very top of the default cheapest-first sort as a
+// wall of unpriced junk. Genuine cheap inventory starts varying naturally at
+// 209만원+, so this only drops that placeholder cluster.
+const MIN_PRICE_MANWON = 201;
 
 function eurToManwon(eur) {
   return Math.round(Number(eur) / EUR_PER_MANWON);
