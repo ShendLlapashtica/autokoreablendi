@@ -8,7 +8,7 @@ export function CountryProvider({ children }) {
     return pristinePrice(manwon);
   }
 
-  const label    = 'deri në Prishtinë · all-in';
+  const label    = 'Prishtinë';
   const cityName = 'Prishtinë';
 
   return (

@@ -32,10 +32,14 @@ function MarqueeItem({ brand }) {
 }
 
 const PAGE_SIZE = 24;
+// Default listing order is cheapest-first — a plain chronological ("most
+// recent") feed surfaces thin/undocumented listings ahead of well-priced
+// real cars, which is exactly what this sort default is meant to avoid.
+const DEFAULT_SORT = 'priceAsc';
 const EMPTY_FILTERS = {
   manufacturer: '', model: '', fuel: '', transmission: '', color: '',
   yearFrom: '', yearTo: '', mileageTo: '', priceFrom: '', priceTo: '',
-  sort: '',
+  sort: DEFAULT_SORT,
 };
 
 function filtersFromParams(params) {
@@ -50,7 +54,7 @@ function filtersFromParams(params) {
     mileageTo:    params.get('kmMax')    || '',
     priceFrom:    params.get('priceFrom') || '',
     priceTo:      params.get('priceTo')   || '',
-    sort:         params.get('sort')     || '',
+    sort:         params.get('sort')     || DEFAULT_SORT,
   };
 }
 
