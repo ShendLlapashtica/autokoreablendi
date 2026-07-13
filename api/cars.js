@@ -339,16 +339,30 @@ async function substringSearch(keyword, manufacturer, offset, count, signal, ext
   // (tier 4, score 1), so keeping them only helps precision here.
   const useTerms = tokenize(keyword);
 
-  const broad = await runSearch(scanParts, 0, 1000, signal, sortKey);
+  // Discovery must never depend on the caller's requested sortKey — a
+  // specific model's listings aren't evenly spread across price or recency
+  // within a brand-wide sample (e.g. a flagship like the 7 Series is
+  // under-represented among the 1000 *cheapest* BMWs overall, which skew
+  // toward smaller/older models), so scanning with only one sort order
+  // discovers a different, incomplete subset of generation variants and the
+  // resulting total silently changes with the sort dropdown. Scanning from
+  // three different angles in parallel and merging what each finds gives a
+  // stable, sort-independent set of real variants.
+  const discoveryScans = await Promise.all(
+    ['ModifiedDate', 'PriceAsc', 'PriceDesc'].map(s => runSearch(scanParts, 0, 1000, signal, s).catch(() => null))
+  );
 
   // Discover the distinct real Model facet strings the term actually
   // matches, keeping the best score seen for each (used for relevance sort
   // on the "most recent" path, where there's no price to sort by instead).
   const variantScores = new Map();
-  for (const car of broad.SearchResults) {
-    const score = matchScore(car, useTerms);
-    if (score > 0 && score > (variantScores.get(car.Model) ?? -1)) {
-      variantScores.set(car.Model, score);
+  for (const scan of discoveryScans) {
+    if (!scan) continue;
+    for (const car of scan.SearchResults) {
+      const score = matchScore(car, useTerms);
+      if (score > 0 && score > (variantScores.get(car.Model) ?? -1)) {
+        variantScores.set(car.Model, score);
+      }
     }
   }
 
