@@ -1,5 +1,10 @@
 const KRW_TO_EUR = 0.00067;
-const DELIVERY_PRISHTINA = 1200;
+// Delivered-to-Kosovo price breakdown: sea/land transport from Korea, the
+// final leg from the port into Kosovo, and the company's margin.
+const TRANSPORT_FEE      = 1650;
+const KOSOVO_DELIVERY_FEE = 350;
+const PROFIT_MARGIN      = 450;
+const DELIVERY_PRISHTINA = TRANSPORT_FEE + KOSOVO_DELIVERY_FEE + PROFIT_MARGIN;
 
 export { DELIVERY_PRISHTINA };
 
@@ -229,13 +234,17 @@ export function manwonToEur(manwon) {
   return Math.round(manwon * 10000 * KRW_TO_EUR);
 }
 
-export function pristinePrice(manwon) { return manwonToEur(manwon) + DELIVERY_PRISHTINA; }
+// Car price in Korea + transport + Kosovo delivery leg + margin, rounded up
+// to the nearest €50 for a clean display figure.
+export function pristinePrice(manwon) {
+  return Math.ceil((manwonToEur(manwon) + DELIVERY_PRISHTINA) / 50) * 50;
+}
 
 // Rough customs estimate shown alongside the Prishtinë price — ~40% of the
-// delivered price, rounded to the nearest €50 for a clean display figure.
+// delivered price, rounded up to the nearest €50 for a clean display figure.
 export function customsEstimate(eurPrice) {
   if (!eurPrice) return 0;
-  return Math.round((eurPrice * 0.40) / 50) * 50;
+  return Math.ceil((eurPrice * 0.40) / 50) * 50;
 }
 export function fmtEur(amount) { return '€' + Math.round(amount).toLocaleString('de-DE'); }
 export function fmtKm(km) {
