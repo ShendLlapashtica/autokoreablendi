@@ -19,6 +19,11 @@ const MIN_PRICE_MANWON = 201;
 // shown, regardless of what the year filter is set to (or left unset).
 const MIN_YEAR = 2016;
 
+// How deep the front-page reranking pool goes for plain unfiltered browsing
+// (see isPlainBrowse below) — covers the first 10 pages at the default page
+// size before falling back to a normal per-page fetch.
+const FEATURED_POOL_SIZE = 240;
+
 function eurToManwon(eur) {
   return Math.round(Number(eur) / EUR_PER_MANWON);
 }
@@ -255,6 +260,23 @@ async function attempt(fetchUrl, isWrapped, signal, label, extraHeaders = {}) {
 // ServiceMark badges and richer photo sets are Encar's own signals of a
 // more trustworthy, "complete" listing; recent/low-mileage cars get a small
 // boost too since they're the ones buyers actually want surfaced first.
+// Raw Encar Manufacturer values for the brands the business wants leading
+// the default homepage feed — desirable German makes buyers actually want
+// to see first, not just whatever happened to list most recently.
+const FEATURED_MANUFACTURERS = new Set(['BMW', '벤츠', '아우디', '폭스바겐']);
+
+// Base-model tokens for the "sweet spot" executive trims called out by name
+// (3 Series, C/E/S-Class, A6/A7, Passat/Arteon) — Encar always suffixes a
+// generation code (e.g. "3시리즈 (F30)"), so this only needs a prefix check.
+const FEATURED_MODEL_PREFIXES = [
+  '3시리즈', '5시리즈', 'C-클래스', 'E-클래스', 'S-클래스', 'A6', 'A7', '파사트', '아테온',
+];
+
+function isFeaturedModel(model) {
+  const m = String(model || '');
+  return FEATURED_MODEL_PREFIXES.some(p => m.startsWith(p));
+}
+
 function qualityScore(car) {
   let score = 0;
   score += (car.Condition   || []).length * 2;
@@ -270,6 +292,18 @@ function qualityScore(car) {
     if (car.Mileage < 50000) score += 2;
     else if (car.Mileage < 100000) score += 1;
   }
+
+  if (FEATURED_MANUFACTURERS.has(car.Manufacturer)) {
+    score += 6;
+    if (isFeaturedModel(car.Model)) score += 3;
+  }
+
+  // "Good deal" band — a well-priced executive car in a range Kosovo buyers
+  // actually shop in, rather than either a stripped high-mileage relic or
+  // an unrealistic exotic outlier at the top of the market.
+  const priceEur = (car.Price || 0) * EUR_PER_MANWON;
+  if (priceEur >= 8000 && priceEur <= 25000) score += 2;
+
   return score;
 }
 
@@ -499,7 +533,24 @@ export default async function handler(req, res) {
   const timer = setTimeout(() => ctrl.abort(), 9000);
 
   try {
-    let data = await runSearch([...identityParts, ...commonParts], offset, count, ctrl.signal, sortKey);
+    // Plain unfiltered homepage browsing — no brand/model/keyword narrowing
+    // at all. A single "most recent 24" page is almost always pure
+    // Hyundai/Kia (they dominate raw listing volume), so reranking that tiny
+    // page by qualityScore never gives the featured German brands a real
+    // chance to surface. Fetch a wider front pool once, rank the whole
+    // thing, and slice each page from it instead.
+    const isPlainBrowse = sortKey === 'ModifiedDate' && identityParts.length === 0 && !rawKeyword;
+    let data;
+    if (isPlainBrowse && offset < FEATURED_POOL_SIZE) {
+      const pool = await runSearch(commonParts, 0, FEATURED_POOL_SIZE, ctrl.signal, sortKey);
+      const ranked = pool.SearchResults
+        .map((car, i) => ({ car, i, s: qualityScore(car) }))
+        .sort((a, b) => b.s - a.s || a.i - b.i)
+        .map(x => x.car);
+      data = { Count: pool.Count, SearchResults: ranked.slice(offset, offset + count) };
+    } else {
+      data = await runSearch([...identityParts, ...commonParts], offset, count, ctrl.signal, sortKey);
+    }
 
     // A non-exact model was left out of the facet filter above — narrow the
     // (brand-wide) results down by substring-matching it now, rather than
