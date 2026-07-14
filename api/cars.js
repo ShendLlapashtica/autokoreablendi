@@ -15,6 +15,10 @@ const EUR_PER_MANWON = 6.7;
 // 209만원+, so this only drops that placeholder cluster.
 const MIN_PRICE_MANWON = 201;
 
+// Site-wide hard floor — nothing registered before this model year is ever
+// shown, regardless of what the year filter is set to (or left unset).
+const MIN_YEAR = 2016;
+
 function eurToManwon(eur) {
   return Math.round(Number(eur) / EUR_PER_MANWON);
 }
@@ -461,10 +465,14 @@ export default async function handler(req, res) {
     commonParts.push(`Color.${mapped}`);
   }
 
-  if (q.yearFrom || q.yearTo) {
+  // Always applied (not just when yearFrom/yearTo are set) so the MIN_YEAR
+  // floor takes effect on every default, unfiltered browse too — matches
+  // the MIN_PRICE_MANWON floor below.
+  {
     // Year field is YYYYMM (e.g. 201405), so convert 4-digit year to 6-digit range
-    const from = (q.yearFrom ?? '2000') + '00';
-    const to   = (q.yearTo   ?? '2030') + '99';
+    const yearFrom = Math.max(MIN_YEAR, parseInt(q.yearFrom) || MIN_YEAR);
+    const from = yearFrom + '00';
+    const to   = (q.yearTo ?? '2030') + '99';
     commonParts.push(`Year.range(${from}..${to})`);
   }
 

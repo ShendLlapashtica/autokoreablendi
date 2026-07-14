@@ -36,7 +36,10 @@ const SORTS = [
   { val: 'priceDesc', label: 'Çmimi: I lartë → I ulët' },
 ];
 
-const YEARS = Array.from({ length: 21 }, (_, i) => String(2025 - i));
+// Site-wide floor — no car older than 2016 is ever shown (matches api/cars.js's MIN_YEAR).
+const MIN_YEAR = 2016;
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: CURRENT_YEAR - MIN_YEAR + 1 }, (_, i) => String(CURRENT_YEAR - i));
 
 const KM_MAX = [
   { val: '',       label: 'Km max' },
