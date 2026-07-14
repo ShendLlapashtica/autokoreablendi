@@ -19,9 +19,11 @@ const MIN_PRICE_MANWON = 201;
 // shown, regardless of what the year filter is set to (or left unset).
 const MIN_YEAR = 2016;
 
-// How deep the front-page reranking pool goes for plain unfiltered browsing
-// (see isPlainBrowse below) — covers the first 10 pages at the default page
-// size before falling back to a normal per-page fetch.
+// Only the first FEATURED_COUNT cars on the unfiltered homepage are curated
+// (BMW/Mercedes/Audi/VW etc.) — everything past that is plain chronological
+// order. FEATURED_POOL_SIZE is how many recent listings get scanned to find
+// those FEATURED_COUNT candidates from.
+const FEATURED_COUNT     = 20;
 const FEATURED_POOL_SIZE = 240;
 
 function eurToManwon(eur) {
@@ -537,17 +539,22 @@ export default async function handler(req, res) {
     // at all. A single "most recent 24" page is almost always pure
     // Hyundai/Kia (they dominate raw listing volume), so reranking that tiny
     // page by qualityScore never gives the featured German brands a real
-    // chance to surface. Fetch a wider front pool once, rank the whole
-    // thing, and slice each page from it instead.
+    // chance to surface. Only the very first FEATURED_COUNT slots on the
+    // very first page are curated this way — everything after that
+    // (including the rest of this same page, and every later page) is
+    // plain chronological order, untouched.
     const isPlainBrowse = sortKey === 'ModifiedDate' && identityParts.length === 0 && !rawKeyword;
     let data;
-    if (isPlainBrowse && offset < FEATURED_POOL_SIZE) {
+    if (isPlainBrowse && offset === 0) {
       const pool = await runSearch(commonParts, 0, FEATURED_POOL_SIZE, ctrl.signal, sortKey);
-      const ranked = pool.SearchResults
+      const featured = pool.SearchResults
         .map((car, i) => ({ car, i, s: qualityScore(car) }))
         .sort((a, b) => b.s - a.s || a.i - b.i)
-        .map(x => x.car);
-      data = { Count: pool.Count, SearchResults: ranked.slice(offset, offset + count) };
+        .map(x => x.car)
+        .slice(0, FEATURED_COUNT);
+      const featuredIds = new Set(featured.map(c => c.Id));
+      const rest = pool.SearchResults.filter(c => !featuredIds.has(c.Id));
+      data = { Count: pool.Count, SearchResults: [...featured, ...rest].slice(0, count) };
     } else {
       data = await runSearch([...identityParts, ...commonParts], offset, count, ctrl.signal, sortKey);
     }
