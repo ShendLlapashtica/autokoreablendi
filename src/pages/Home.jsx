@@ -93,7 +93,6 @@ export default function Home() {
   const filtersWrapRef = useRef(null);
 
   const session    = useRef(0);
-  const sentinel   = useRef(null);
   const loadingRef = useRef(false);
   const doneRef    = useRef(false);
 
@@ -197,30 +196,22 @@ export default function Home() {
     loadPage(0, filters, keyword, true);
   }, [filters, keyword, loadPage]);
 
-  // Infinite scroll — stable observer, refs avoid stale-closure issues
+  // "Shfaq më shumë" — deliberately not an auto-loading infinite scroll:
+  // new cars only load on click, so scrolling down never yanks the map/
+  // credentials section further away as more cards pop in underneath.
   const filtersRef = useRef(filters);
   const keywordRef = useRef(keyword);
   useEffect(() => { filtersRef.current = filters; }, [filters]);
   useEffect(() => { keywordRef.current = keyword; }, [keyword]);
 
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !loadingRef.current && !doneRef.current) {
-          setPage(prev => {
-            const next = prev + 1;
-            loadPage(next, filtersRef.current, keywordRef.current, false);
-            return next;
-          });
-        }
-      },
-      { rootMargin: '600px' }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [loadPage]); // stable — never disconnects/reconnects due to loading/done changes
+  function loadMore() {
+    if (loadingRef.current || doneRef.current) return;
+    setPage(prev => {
+      const next = prev + 1;
+      loadPage(next, filtersRef.current, keywordRef.current, false);
+      return next;
+    });
+  }
 
   const isSearching = !!keyword;
 
@@ -401,13 +392,23 @@ export default function Home() {
           </div>
         )}
 
-        {/* Sentinel — always in DOM so IntersectionObserver always has a target */}
-        <div ref={sentinel} className="h-16 flex items-center justify-center mt-6 pointer-events-none">
-          {loading && cars.length > 0 && (
-            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-3)' }}>
-              <span className="w-4 h-4 border-2 border-gray-700 border-t-gray-400 rounded-full animate-spin" />
-              Duke ngarkuar...
-            </div>
+        {/* Shfaq më shumë — manual load, never auto-fires on scroll */}
+        <div className="flex items-center justify-center mt-6">
+          {!done && cars.length > 0 && (
+            <button
+              onClick={loadMore}
+              disabled={loading}
+              className="btn-ghost flex items-center gap-2 px-6 py-3 text-sm font-semibold disabled:opacity-60"
+            >
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-gray-700 border-t-gray-400 rounded-full animate-spin" />
+                  Duke ngarkuar...
+                </>
+              ) : (
+                'Shfaq më shumë'
+              )}
+            </button>
           )}
           {done && cars.length > 0 && (
             <p className="text-xs font-mono" style={{ color: 'var(--text-4)' }}>

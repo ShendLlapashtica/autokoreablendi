@@ -3,7 +3,7 @@ import { useParams, useLocation, Link } from 'react-router-dom';
 import {
   ArrowLeft, Phone, MessageCircle, Gauge, Calendar, Fuel,
   Settings, Users, ShieldCheck, AlertTriangle, Info, MapPin,
-  ExternalLink, Mail, Zap, Wind, Car, ChevronRight, X,
+  ExternalLink, Mail, Zap, Wind, Car, ChevronRight, ChevronDown, X,
 } from 'lucide-react';
 import ImageGallery from '../components/ImageGallery.jsx';
 import CarCard from '../components/CarCard.jsx';
@@ -53,6 +53,7 @@ export default function CarDetail() {
   const [similar, setSimilar]   = useState([]);
   const [loadingCar, setLoadingCar] = useState(!state?.car);
   const [error, setError]       = useState(null);
+  const [showProcedure, setShowProcedure] = useState(false);
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, []);
 
@@ -312,6 +313,54 @@ export default function CarDetail() {
               {length    && <Row label="Gjatësia (mm)"   value={`${Number(length).toLocaleString('de-DE')} mm`} />}
               {vin       && <Row label="Numri Shasisë"   value={vin} mono />}
               {id        && <Row label="ID Encar"        value={String(id)} mono highlight />}
+            </div>
+
+            {/* ── Procedurat e Blerjes ── */}
+            <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <button
+                onClick={() => setShowProcedure(o => !o)}
+                className="w-full flex items-center justify-between gap-3"
+              >
+                <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>
+                  <Info className="w-3.5 h-3.5 text-red-500" />
+                  Procedurat e Blerjes
+                </span>
+                <span className="flex items-center gap-1 text-sm font-semibold text-red-500">
+                  {showProcedure ? 'Fshih procedurat e blerjes' : 'Shfaq procedurat e blerjes'}
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showProcedure ? 'rotate-180' : ''}`} />
+                </span>
+              </button>
+
+              {showProcedure && (
+                <div className="mt-4 pt-4 space-y-4" style={{ borderTop: '1px solid var(--border-lo)' }}>
+                  <div className="space-y-3">
+                    <div className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-red-500/10 text-red-500">1</span>
+                      <p className="text-sm pt-0.5" style={{ color: 'var(--text-2)' }}>Përzgjedhja e veturës.</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-red-500/10 text-red-500">2</span>
+                      <p className="text-sm pt-0.5" style={{ color: 'var(--text-2)' }}>Bëhet inspektimi nga ekipi ynë profesional.</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-red-500/10 text-red-500">3</span>
+                      <p className="text-sm pt-0.5" style={{ color: 'var(--text-2)' }}>
+                        Pas përfundimit të inspektimit dhe nëse klienti është i kënaqur me gjendjen e veturës, bëhet blerja e veturës.
+                        Në këtë fazë kryhet pagesa e plotë në llogarinë zyrtare të kompanisë.
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-3)' }}>
+                    Korea Auto Imports Prishtina është kompani e regjistruar në Kosovë, dhe të gjitha pagesat realizohen në llogarinë tonë.
+                  </p>
+
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-3)' }}>
+                    Transporti nga Koreja e Jugut realizohet me RORO dhe organizohet mesatarisht çdo 20 ditë.
+                    Koha e mbërritjes së veturës në Durrës është zakonisht rreth 33 ditë nga data e nisjes.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* ── Options ── */}
