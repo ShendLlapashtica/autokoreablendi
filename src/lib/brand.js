@@ -12,7 +12,7 @@ export const BRAND = {
     secondaryDisp: '0160 9572 5773',
   },
 
-  email: 'shendillapashtica@gmail.com',
+  email: 'Bleart.gb@gmail.com',
 
   address: {
     line: 'Magjistrale Prishtinë–Ferizaj (Gadime)',
