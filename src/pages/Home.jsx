@@ -219,7 +219,7 @@ export default function Home() {
     <div className="min-h-screen" style={{ background: 'var(--bg-page)' }}>
 
       {/* Hero — BMW image with dark gradient overlay */}
-      <div className="relative overflow-hidden" style={{ minHeight: isSearching ? '220px' : '440px' }}>
+      <div className={`relative overflow-hidden ${isSearching ? 'min-h-[220px]' : 'min-h-[440px] md:min-h-[600px]'}`}>
         <img src="/hero-bmw.png" alt=""
              className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: 'center 25%' }} />
         <div className="absolute inset-0" style={{
@@ -256,7 +256,7 @@ export default function Home() {
                   <span className="animate-pulse text-gray-500">Duke ngarkuar...</span>
                 )}
               </h1>
-              <p className="text-sm md:text-base mt-3 text-gray-300 max-w-md">Çmimet përfshijnë transport deri në port · all-in</p>
+              <p className="text-sm md:text-base mt-3 text-gray-300 max-w-md">Çmimet përfshijnë transport deri në port</p>
             </>
           )}
         </div>
@@ -357,7 +357,7 @@ export default function Home() {
         )}
 
         {cars.length === 0 && loading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: 16 }).map((_, i) => (
               <div key={i} className="rounded-2xl overflow-hidden animate-pulse" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
                 <div style={{ aspectRatio: '16/10', background: 'var(--bg-card2)' }} />
@@ -387,7 +387,7 @@ export default function Home() {
         )}
 
         {cars.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {cars.map(car => <CarCard key={`${car.Id}-${car.Price}`} car={car} />)}
           </div>
         )}
