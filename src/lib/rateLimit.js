@@ -1,8 +1,32 @@
-// API key gate + rate limiting (100 req/day)
+// API key gate + rate limiting (100 req/day per key)
 // Uses Upstash Redis REST API directly — no npm package needed
 // Gracefully degrades: if env vars not set, just validates the key (no count enforcement)
+//
+// Supports handing out more than one free key, each with its own independent
+// daily quota (so person A spamming never eats into person B's 100/day):
+//   FRIEND_API_KEY   = single legacy key, counted under the "friend" label
+//   FRIEND_API_KEYS  = "label1:key1,label2:key2,..." for additional people
+// Revoke one person by deleting their entry — the others are unaffected.
+
+import { timingSafeEqual } from 'crypto';
 
 const DAILY_LIMIT = 100;
+
+function loadKeys() {
+  const keys = new Map(); // key value -> label
+  if (process.env.FRIEND_API_KEY) keys.set(process.env.FRIEND_API_KEY, 'friend');
+  for (const pair of (process.env.FRIEND_API_KEYS || '').split(',')) {
+    const [label, value] = pair.split(':').map(s => s?.trim());
+    if (label && value) keys.set(value, label);
+  }
+  return keys;
+}
+
+function safeEqual(a, b) {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+}
 
 async function redisIncr(key) {
   const url   = process.env.UPSTASH_REDIS_REST_URL;
@@ -39,15 +63,18 @@ export async function checkApiKey(req, res) {
   // No key = normal website visitor → always allow
   if (!key) return true;
 
-  const validKey = process.env.FRIEND_API_KEY;
-  if (!validKey || key !== validKey) {
+  let label = null;
+  for (const [validKey, name] of loadKeys()) {
+    if (safeEqual(key, validKey)) { label = name; break; }
+  }
+  if (!label) {
     res.status(401).json({ error: 'Invalid API key.' });
     return false;
   }
 
-  // Valid key — check daily quota
+  // Valid key — check this person's own daily quota
   const today = new Date().toISOString().slice(0, 10); // e.g. "2026-06-30"
-  const rKey  = `autovg:rl:${today}`;
+  const rKey  = `autovg:rl:${label}:${today}`;
   const count = await redisIncr(rKey);
 
   if (count !== null) {
