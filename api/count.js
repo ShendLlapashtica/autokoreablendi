@@ -1,4 +1,6 @@
 // Returns just the total count for a given filter — cheap prefetch for pagination UI
+import { checkApiKey } from '../src/lib/rateLimit.js';
+
 const BROWSER_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   'Accept': 'application/json, text/javascript, */*; q=0.01',
@@ -10,8 +12,10 @@ const BROWSER_HEADERS = {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  if (!await checkApiKey(req, res)) return;
 
   const encarUrl = `https://api.encar.com/search/car/list/general?${new URLSearchParams({
     count: 'true',

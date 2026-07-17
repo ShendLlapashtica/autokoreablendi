@@ -1,5 +1,6 @@
 // Encar reverse-engineering proxy — uncapped, multi-fallback
 // Supports full pagination over 200k+ listings
+import { checkApiKey } from '../src/lib/rateLimit.js';
 
 // Encar's Price field is in 만원 (manwon = 10,000 KRW) units, but the
 // frontend's price filter dropdowns are labeled in EUR — matches
@@ -446,8 +447,10 @@ async function substringSearch(keyword, manufacturer, offset, count, signal, ext
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  if (!await checkApiKey(req, res)) return;
 
   const q = req.query;
 
