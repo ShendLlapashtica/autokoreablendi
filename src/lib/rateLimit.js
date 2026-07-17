@@ -12,6 +12,18 @@ import { timingSafeEqual } from 'crypto';
 
 const DAILY_LIMIT = 100;
 
+// Generous per-IP cap on anonymous (no-key) traffic — high enough that a
+// real visitor browsing/filtering/paginating the site never gets near it,
+// but bounds how hard any single script can hammer the proxy (and, in
+// turn, Encar's upstream API) without needing a key at all.
+const IP_LIMIT_PER_MINUTE = 120;
+
+function clientIp(req) {
+  const fwd = req.headers['x-forwarded-for'];
+  if (fwd) return fwd.split(',')[0].trim();
+  return req.headers['x-real-ip'] || req.socket?.remoteAddress || 'unknown';
+}
+
 function loadKeys() {
   const keys = new Map(); // key value -> label
   if (process.env.FRIEND_API_KEY) keys.set(process.env.FRIEND_API_KEY, 'friend');
@@ -28,7 +40,7 @@ function safeEqual(a, b) {
   return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
 }
 
-async function redisIncr(key) {
+async function redisIncr(key, ttlSeconds = 86400) {
   const url   = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return null; // Redis not configured — skip counting
@@ -39,7 +51,7 @@ async function redisIncr(key) {
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify([
         ['INCR', key],
-        ['EXPIRE', key, 86400],
+        ['EXPIRE', key, ttlSeconds],
       ]),
     });
     const data = await res.json();
@@ -55,13 +67,21 @@ async function redisIncr(key) {
  * Returns true  → request is allowed, continue
  * Returns false → response already sent (401 or 429), handler must return
  *
- * Normal website traffic (no x-api-key header) always passes through.
+ * Normal website traffic (no x-api-key header) passes through unless it
+ * trips the generous per-IP cap below — real visitors never notice it.
  */
 export async function checkApiKey(req, res) {
   const key = (req.headers['x-api-key'] || '').trim();
 
-  // No key = normal website visitor → always allow
-  if (!key) return true;
+  if (!key) {
+    const bucket = Math.floor(Date.now() / 60000); // rolling 1-minute window
+    const count  = await redisIncr(`autovg:ip:${clientIp(req)}:${bucket}`, 60);
+    if (count !== null && count > IP_LIMIT_PER_MINUTE) {
+      res.status(429).json({ error: 'Too many requests, slow down.' });
+      return false;
+    }
+    return true;
+  }
 
   let label = null;
   for (const [validKey, name] of loadKeys()) {
