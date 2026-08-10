@@ -46,6 +46,8 @@ const MANUFACTURER_REVERSE = {
   'Kia':             '기아',
   'Mercedes-Benz':   '벤츠',
   'Mercedes Benz':   '벤츠',
+  'Mercedes':        '벤츠',
+  'Benz':            '벤츠',
   'Audi':            '아우디',
   'Volkswagen':      '폭스바겐',
   'Porsche':         '포르쉐',
@@ -115,6 +117,11 @@ const MODEL_REVERSE = {
   'Accord':    '어코드', 'Civic':   '시빅',
   'Altima':    '알티마', 'Murano':   '무라노', 'Rogue':   '로그',
   'Outlander': '아웃랜더', 'Forester': '포레스터', 'Outback': '아웃백',
+  // Mercedes-AMG's standalone sports-car line — Encar stores this literally
+  // in English with no Korean translation and no generation-code suffix
+  // (verified live), so it's a genuine exact facet value, unlike the rest
+  // of the Mercedes lineup (C/E/S-Class etc.) which always carry one.
+  'AMG GT':    'AMG GT',
 };
 
 // Albanian/English fuel → Korean Encar FuelType
@@ -343,17 +350,28 @@ function tokenize(str) {
 // mid-token (e.g. "x" inside the generation code "nx4") is much weaker
 // signal and should rank below real matches, not disappear, since we'd
 // rather over- than under-include.
+//
+// Badge/trim text (otherTokens) only ever ADDS to an already-qualified
+// score, never qualifies a car on its own — otherwise a common trim badge
+// shared across an entire lineup (e.g. "AMG Line" appears on the vast
+// majority of current Mercedes C/E/GLC/GLE-Class listings) makes searching
+// for an unrelated model that merely shares a word with that badge (e.g.
+// "AMG GT") discover the whole lineup as "matching variants". Each
+// discovered variant gets its own live re-query in substringSearch, so
+// that false-positive flood was blowing past the request timeout — this
+// requires at least one term to hit the car's own Model field first.
 function matchScore(car, terms) {
   const modelTokens = tokenize(car.Model);
   const otherTokens = [...tokenize(car.Manufacturer), ...tokenize(car.Badge), ...tokenize(car.BadgeDetail)];
   let score = 0;
+  let modelHit = false;
   for (const t of terms) {
-    if (modelTokens.some(tok => tok === t))            score += 100;
-    else if (modelTokens.some(tok => tok.startsWith(t))) score += 50;
+    if (modelTokens.some(tok => tok === t))            { score += 100; modelHit = true; }
+    else if (modelTokens.some(tok => tok.startsWith(t))) { score += 50; modelHit = true; }
     else if (otherTokens.some(tok => tok.startsWith(t))) score += 10;
     else if ([...modelTokens, ...otherTokens].some(tok => tok.includes(t))) score += 1;
   }
-  return score;
+  return modelHit ? score : 0;
 }
 
 // Encar attaches a generation-code suffix to almost every Model facet value
