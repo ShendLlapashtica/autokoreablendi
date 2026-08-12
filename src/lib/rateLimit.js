@@ -22,7 +22,11 @@ const DAILY_LIMIT = 100;
 // Not truly infinite — bounds the blast radius of a leaked paid key (and
 // protects the shared Encar/CORS-proxy upstreams this site also depends on)
 // while still being far beyond what a real car-listing site would ever hit.
-const PAID_DAILY_LIMIT = 50000;
+// 200k/day matches the scale of this site's own listing volume, and is
+// well above the ~172k/day an anonymous visitor's IP could already reach
+// under IP_LIMIT_PER_MINUTE — so this is genuine parity with normal site
+// traffic, not an artificial ceiling on the paid tier.
+const PAID_DAILY_LIMIT = 200000;
 
 // Generous per-IP cap on anonymous (no-key) traffic — high enough that a
 // real visitor browsing/filtering/paginating the site never gets near it,
