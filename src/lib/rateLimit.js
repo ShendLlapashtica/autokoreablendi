@@ -60,8 +60,13 @@ function loadPaidKeys() {
 }
 
 // Accepts a bare hostname match or any subdomain of it (e.g. an allowed
-// domain of "encar-api.com" also covers "x.encar-api.com").
+// domain of "encar-api.com" also covers "x.encar-api.com"). A domain of "*"
+// opts a key out of origin-checking entirely — for keys used server-side
+// (a backend sync script, a cron job) rather than from browser JS, there is
+// no real browser Origin to check in the first place, so the key's secrecy
+// (kept out of any client-exposed code) is the actual protection instead.
 function hostnameAllowed(hostname, allowedDomain) {
+  if (allowedDomain === '*') return true;
   const h = hostname.toLowerCase();
   return h === allowedDomain || h.endsWith(`.${allowedDomain}`);
 }
@@ -140,7 +145,7 @@ export async function checkApiKey(req, res) {
     if (!safeEqual(key, validKey)) continue;
 
     const origin = requestOrigin(req);
-    if (!origin || !hostnameAllowed(origin, domain)) {
+    if (domain !== '*' && (!origin || !hostnameAllowed(origin, domain))) {
       res.status(403).json({ error: `This key is only authorized for ${domain}.` });
       return false;
     }
