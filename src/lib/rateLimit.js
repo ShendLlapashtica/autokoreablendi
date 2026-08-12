@@ -7,10 +7,22 @@
 //   FRIEND_API_KEY   = single legacy key, counted under the "friend" label
 //   FRIEND_API_KEYS  = "label1:key1,label2:key2,..." for additional people
 // Revoke one person by deleting their entry — the others are unaffected.
+//
+// Paid keys (PAID_API_KEYS) are a separate tier for external, commercial
+// use — a much higher ceiling than the free tier, but locked to a single
+// origin domain so a leaked/shared key can't be reused on other sites:
+//   PAID_API_KEYS = "label1:key1:domain1.com,label2:key2:domain2.com"
+// Counted under their own Redis key prefix (autovg:paid:) so their volume
+// never shares a bucket with, or can exhaust, the free-tier quotas above.
 
 import { timingSafeEqual } from 'crypto';
 
 const DAILY_LIMIT = 100;
+
+// Not truly infinite — bounds the blast radius of a leaked paid key (and
+// protects the shared Encar/CORS-proxy upstreams this site also depends on)
+// while still being far beyond what a real car-listing site would ever hit.
+const PAID_DAILY_LIMIT = 50000;
 
 // Generous per-IP cap on anonymous (no-key) traffic — high enough that a
 // real visitor browsing/filtering/paginating the site never gets near it,
@@ -32,6 +44,40 @@ function loadKeys() {
     if (label && value) keys.set(value, label);
   }
   return keys;
+}
+
+function loadPaidKeys() {
+  const keys = new Map(); // key value -> { label, domain }
+  for (const entry of (process.env.PAID_API_KEYS || '').split(',')) {
+    const [label, value, domain] = entry.split(':').map(s => s?.trim());
+    if (label && value && domain) keys.set(value, { label, domain: domain.toLowerCase() });
+  }
+  return keys;
+}
+
+// Accepts a bare hostname match or any subdomain of it (e.g. an allowed
+// domain of "encar-api.com" also covers "x.encar-api.com").
+function hostnameAllowed(hostname, allowedDomain) {
+  const h = hostname.toLowerCase();
+  return h === allowedDomain || h.endsWith(`.${allowedDomain}`);
+}
+
+// Paid keys are meant to be called from browser JS on the client's own
+// site, so a real browser sends Origin (cross-origin fetch/XHR) or, failing
+// that, Referer — both are outside this server's control to fake from a
+// genuine browser. This is the same "HTTP referrer restricted key" model
+// Google Maps uses: it stops casual reuse/leakage onto other sites, not a
+// determined attacker forging headers from a script.
+function requestOrigin(req) {
+  const origin = req.headers['origin'];
+  if (origin) {
+    try { return new URL(origin).hostname; } catch {}
+  }
+  const referer = req.headers['referer'];
+  if (referer) {
+    try { return new URL(referer).hostname; } catch {}
+  }
+  return null;
 }
 
 function safeEqual(a, b) {
@@ -79,6 +125,31 @@ export async function checkApiKey(req, res) {
     if (count !== null && count > IP_LIMIT_PER_MINUTE) {
       res.status(429).json({ error: 'Too many requests, slow down.' });
       return false;
+    }
+    return true;
+  }
+
+  // Paid keys are checked first and handled entirely separately — origin
+  // enforcement, quota bucket, and response headers never touch the
+  // free-tier path below, so paid-tier volume can't degrade it.
+  for (const [validKey, { label, domain }] of loadPaidKeys()) {
+    if (!safeEqual(key, validKey)) continue;
+
+    const origin = requestOrigin(req);
+    if (!origin || !hostnameAllowed(origin, domain)) {
+      res.status(403).json({ error: `This key is only authorized for ${domain}.` });
+      return false;
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const count = await redisIncr(`autovg:paid:${label}:${today}`);
+    if (count !== null) {
+      res.setHeader('X-RateLimit-Limit',     String(PAID_DAILY_LIMIT));
+      res.setHeader('X-RateLimit-Remaining', String(Math.max(0, PAID_DAILY_LIMIT - count)));
+      if (count > PAID_DAILY_LIMIT) {
+        res.status(429).json({ error: 'Daily limit exceeded.', limit: PAID_DAILY_LIMIT, used: count });
+        return false;
+      }
     }
     return true;
   }
