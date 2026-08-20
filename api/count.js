@@ -14,6 +14,7 @@ const BROWSER_HEADERS = {
 
 // See api/cars.js for what this is and why (verified live 2026-08-20).
 const DENO_RELAY = 'https://autokoreablendi-encar-relay.shendllapashtica.deno.net/';
+const DENO_RELAY_HEADERS = { 'x-relay-secret': process.env.DENO_RELAY_SECRET || '' };
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -48,7 +49,7 @@ export default async function handler(req, res) {
       okOnly(fetch(encarUrl, { signal: ctrl.signal, headers: BROWSER_HEADERS })),
       okOnly(fetch(`https://api.allorigins.win/get?url=${enc}`, { signal: ctrl.signal })),
       okOnly(fetch(`https://api.cors.lol/?url=${enc}`, { signal: ctrl.signal })),
-      okOnly(fetch(`${DENO_RELAY}?url=${enc}`, { signal: ctrl.signal })),
+      okOnly(fetch(`${DENO_RELAY}?url=${enc}`, { signal: ctrl.signal, headers: DENO_RELAY_HEADERS })),
     ]);
     clearTimeout(timer);
     const text = await r.text();
