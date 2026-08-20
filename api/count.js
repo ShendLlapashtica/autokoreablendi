@@ -27,8 +27,10 @@ export default async function handler(req, res) {
     inav: '|Metadata|Sort',
   })}`;
 
+  // See api/cars.js — a blocked `direct` attempt hangs instead of failing
+  // fast, so this is the real latency ceiling per request, kept short.
   const ctrl  = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 9000);
+  const timer = setTimeout(() => ctrl.abort(), 4000);
   const enc   = encodeURIComponent(encarUrl);
 
   // A plain fetch() *fulfills* on any HTTP response, including a proxy's own

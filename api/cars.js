@@ -577,8 +577,13 @@ export default async function handler(req, res) {
   if (manufacturer) identityParts.push(`Manufacturer.${manufacturer}`);
   if (model && modelExact) identityParts.push(`Model.${model}`);
 
+  // A blocked `direct` attempt hangs rather than fails fast (confirmed live:
+  // ~10s round trips from prod), so this timeout is the real ceiling on
+  // every request's latency, not just a safety net — kept short so a
+  // failing live attempt falls through to the cors.lol/cache race quickly
+  // instead of visitors staring at a spinner for 9+ seconds.
   const ctrl  = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 9000);
+  const timer = setTimeout(() => ctrl.abort(), 4000);
   const cacheKey = cacheKeyFromQuery('autovg:cache:cars', q);
 
   try {
