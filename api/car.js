@@ -8,6 +8,9 @@ const BROWSER_HEADERS = {
   'Origin': 'https://www.encar.com',
 };
 
+// See api/cars.js for what this is and why (verified live 2026-08-20).
+const DENO_RELAY = 'https://autokoreablendi-encar-relay.shendllapashtica.deno.net/';
+
 async function tryFetch(url, signal, isWrapped = false) {
   const r = await fetch(url, { signal, headers: isWrapped ? {} : BROWSER_HEADERS });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -54,7 +57,10 @@ export default async function handler(req, res) {
       // View endpoint — direct + proxied
       tryFetch(viewUrl, ctrl.signal),
       tryFetch(`https://api.allorigins.win/get?url=${enc1}`, ctrl.signal, true),
-      tryFetch(`https://corsproxy.io/?${enc1}`, ctrl.signal),
+      // corsproxy.io rejects server-side callers on its free plan — dead
+      // for this use case, see api/cars.js.
+      tryFetch(`https://api.cors.lol/?url=${enc1}`, ctrl.signal),
+      tryFetch(`${DENO_RELAY}?url=${enc1}`, ctrl.signal),
       // List search fallback
       tryFetch(listUrl, ctrl.signal).then(d => {
         const car = d?.SearchResults?.[0];
@@ -66,6 +72,11 @@ export default async function handler(req, res) {
         if (!car) throw new Error('not found in list via proxy');
         return car;
       }),
+      tryFetch(`${DENO_RELAY}?url=${enc2}`, ctrl.signal).then(d => {
+        const car = d?.SearchResults?.[0];
+        if (!car) throw new Error('not found in list via denorelay');
+        return car;
+      }),
     ]);
 
     // Best-effort: the view/list endpoints above only carry a handful of
@@ -73,7 +84,11 @@ export default async function handler(req, res) {
     // 20+ shots) — merge it in when available, but a failure here (it's
     // a separate, less reliable endpoint) must never break the response.
     try {
-      const full = await tryFetch(`https://api.encar.com/v1/readside/vehicle/${id}`, ctrl.signal);
+      const readsideUrl = `https://api.encar.com/v1/readside/vehicle/${id}`;
+      const full = await Promise.any([
+        tryFetch(readsideUrl, ctrl.signal),
+        tryFetch(`${DENO_RELAY}?url=${encodeURIComponent(readsideUrl)}`, ctrl.signal),
+      ]);
       if (Array.isArray(full?.photos) && full.photos.length > 0) {
         data.Photos = full.photos
           .slice()

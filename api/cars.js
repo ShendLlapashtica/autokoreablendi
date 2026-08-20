@@ -40,6 +40,12 @@ const BROWSER_HEADERS = {
   'Origin': 'https://www.encar.com',
 };
 
+// Self-hosted relay on Deno Deploy — verified live 2026-08-20 that its
+// egress isn't on Encar's CloudFront-WAF datacenter blocklist (unlike
+// Vercel/AWS and a self-hosted Cloudflare Worker, both confirmed blocked
+// the same day). Locked server-side to only forward to api.encar.com.
+const DENO_RELAY = 'https://autokoreablendi-encar-relay.shendllapashtica.deno.net/';
+
 // English brand name → Korean Encar identifier
 // (BMW, Audi, Porsche etc. are stored in Encar under their own name or Korean)
 const MANUFACTURER_REVERSE = {
@@ -341,6 +347,8 @@ async function runSearch(parts, offset, count, signal, sortKey = 'ModifiedDate')
     // per-caller rate limit kicks in fast under repeat traffic — still a
     // net-positive extra attempt in this race, not a guaranteed hit).
     attempt(`https://api.cors.lol/?url=${enc}`,                false, signal, 'corslol',   {}),
+    // Own relay, not rate-limited by other callers — see DENO_RELAY comment above.
+    attempt(`${DENO_RELAY}?url=${enc}`,                        false, signal, 'denorelay', {}),
   ]);
 }
 
