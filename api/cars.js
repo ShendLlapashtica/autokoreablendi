@@ -583,7 +583,7 @@ export default async function handler(req, res) {
   // failing live attempt falls through to the cors.lol/cache race quickly
   // instead of visitors staring at a spinner for 9+ seconds.
   const ctrl  = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 4000);
+  const timer = setTimeout(() => ctrl.abort(), 3000);
   const cacheKey = cacheKeyFromQuery('autovg:cache:cars', q);
 
   try {
