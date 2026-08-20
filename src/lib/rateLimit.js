@@ -14,6 +14,13 @@
 //   PAID_API_KEYS = "label1:key1:domain1.com,label2:key2:domain2.com"
 // Counted under their own Redis key prefix (autovg:paid:) so their volume
 // never shares a bucket with, or can exhaust, the free-tier quotas above.
+//
+// A given paid key can optionally add two more fields to run under its own
+// throttle instead of the plain domain+daily-quota rules above:
+//   "label:key:domain.com:rpm:maxCount"
+//   rpm      — requests allowed per rolling 60s window (blank = uncapped)
+//   maxCount — ceiling on the `count` query param, read by api/cars.js via
+//              req.paidMaxCount (blank = site-wide default of 500)
 
 import { timingSafeEqual } from 'crypto';
 
@@ -50,11 +57,27 @@ function loadKeys() {
   return keys;
 }
 
+// Trailing rpm/maxCount fields are optional and per-key — most paid clients
+// have neither set and just run under the plain domain+daily-quota rules
+// above. A client that needs deliberately slower/smaller responses (rather
+// than being cut off entirely) gets its own throttle without touching
+// anyone else's key: label:key:domain:rpm:maxCount
+//   rpm      — requests allowed per rolling 60s window (blank = no cap)
+//   maxCount — hard ceiling on the `count` query param (blank = site default)
 function loadPaidKeys() {
-  const keys = new Map(); // key value -> { label, domain }
+  const keys = new Map(); // key value -> { label, domain, rpm, maxCount }
   for (const entry of (process.env.PAID_API_KEYS || '').split(',')) {
-    const [label, value, domain] = entry.split(':').map(s => s?.trim());
-    if (label && value && domain) keys.set(value, { label, domain: domain.toLowerCase() });
+    const [label, value, domain, rpmStr, maxCountStr] = entry.split(':').map(s => s?.trim());
+    if (label && value && domain) {
+      const rpm      = rpmStr      ? parseInt(rpmStr, 10)      : null;
+      const maxCount = maxCountStr ? parseInt(maxCountStr, 10) : null;
+      keys.set(value, {
+        label,
+        domain: domain.toLowerCase(),
+        rpm:      Number.isFinite(rpm)      ? rpm      : null,
+        maxCount: Number.isFinite(maxCount) ? maxCount : null,
+      });
+    }
   }
   return keys;
 }
@@ -141,13 +164,25 @@ export async function checkApiKey(req, res) {
   // Paid keys are checked first and handled entirely separately — origin
   // enforcement, quota bucket, and response headers never touch the
   // free-tier path below, so paid-tier volume can't degrade it.
-  for (const [validKey, { label, domain }] of loadPaidKeys()) {
+  for (const [validKey, { label, domain, rpm, maxCount }] of loadPaidKeys()) {
     if (!safeEqual(key, validKey)) continue;
 
     const origin = requestOrigin(req);
     if (domain !== '*' && (!origin || !hostnameAllowed(origin, domain))) {
       res.status(403).json({ error: `This key is only authorized for ${domain}.` });
       return false;
+    }
+
+    // Per-key rpm cap (opt-in, see loadPaidKeys) — checked before the daily
+    // quota so a throttled key fails fast on the cheaper, shorter-window
+    // check rather than always paying for the daily INCR too.
+    if (rpm != null) {
+      const minuteBucket = Math.floor(Date.now() / 60000);
+      const rpmCount = await redisIncr(`autovg:paid:rpm:${label}:${minuteBucket}`, 60);
+      if (rpmCount !== null && rpmCount > rpm) {
+        res.status(429).json({ error: 'Too many requests, slow down.', limit: rpm });
+        return false;
+      }
     }
 
     const today = new Date().toISOString().slice(0, 10);
@@ -160,6 +195,10 @@ export async function checkApiKey(req, res) {
         return false;
       }
     }
+
+    // Read by api/cars.js to clamp the `count` query param below the
+    // site-wide 500 default — only set when this key has its own override.
+    if (maxCount != null) req.paidMaxCount = maxCount;
     return true;
   }
 

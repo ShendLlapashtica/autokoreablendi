@@ -486,8 +486,12 @@ export default async function handler(req, res) {
 
   const q = req.query;
 
+  // A throttled paid key (see rateLimit.js's PAID_API_KEYS maxCount field)
+  // gets a lower ceiling here than the site-wide default of 500.
+  const countCap = req.paidMaxCount ?? 500;
+
   const page   = Math.max(0, parseInt(q.page  ?? '0'));
-  const count  = Math.min(500, Math.max(1, parseInt(q.count ?? '24')));
+  const count  = Math.min(countCap, Math.max(1, parseInt(q.count ?? '24')));
   const offset = page * count;
 
   // Identity filter (manufacturer/model) — kept separate from the rest so we
