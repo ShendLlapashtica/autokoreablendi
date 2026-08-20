@@ -1,5 +1,8 @@
 // Returns just the total count for a given filter — cheap prefetch for pagination UI
 import { checkApiKey } from '../src/lib/rateLimit.js';
+import { cacheGet, cacheSet } from '../src/lib/serverCache.js';
+
+const CACHE_KEY = 'autovg:cache:count:total';
 
 const BROWSER_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
@@ -37,9 +40,12 @@ export default async function handler(req, res) {
     const text = await r.text();
     let data;
     try { data = JSON.parse(text); } catch { data = JSON.parse(JSON.parse(text).contents); }
+    await cacheSet(CACHE_KEY, { total: data.Count });
     return res.status(200).json({ total: data.Count });
   } catch {
     clearTimeout(timer);
+    const cached = await cacheGet(CACHE_KEY);
+    if (cached) return res.status(200).json({ total: cached.total, stale: true, cachedAt: cached.ts });
     return res.status(502).json({ error: 'count fetch failed' });
   }
 }

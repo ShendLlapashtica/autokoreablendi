@@ -1,6 +1,7 @@
 // Encar reverse-engineering proxy — uncapped, multi-fallback
 // Supports full pagination over 200k+ listings
 import { checkApiKey } from '../src/lib/rateLimit.js';
+import { cacheGet, cacheSet, cacheKeyFromQuery } from '../src/lib/serverCache.js';
 
 // Encar's Price field is in 만원 (manwon = 10,000 KRW) units, but the
 // frontend's price filter dropdowns are labeled in EUR — matches
@@ -572,6 +573,7 @@ export default async function handler(req, res) {
 
   const ctrl  = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 9000);
+  const cacheKey = cacheKeyFromQuery('autovg:cache:cars', q);
 
   try {
     // Plain unfiltered homepage browsing — no brand/model/keyword narrowing
@@ -640,6 +642,9 @@ export default async function handler(req, res) {
           .map(x => x.car)
       : data.SearchResults;
 
+    // Best-effort — never let a cache-write failure affect the live response.
+    if (results.length > 0) await cacheSet(cacheKey, { total: data.Count, results });
+
     return res.status(200).json({
       total:   data.Count,
       page,
@@ -653,6 +658,21 @@ export default async function handler(req, res) {
     const detail    = err instanceof AggregateError
       ? err.errors.map(e => e.message).join(' | ')
       : err.message;
+
+    // Live fetch (direct + every proxy) failed — serve the last-known-good
+    // response for this exact query, if any visitor has ever gotten one,
+    // instead of a hard error. Still marked `stale` so the UI can say so.
+    const cached = await cacheGet(cacheKey);
+    if (cached) {
+      return res.status(200).json({
+        total:    cached.total,
+        page,
+        count:    cached.results.length,
+        results:  cached.results,
+        stale:    true,
+        cachedAt: cached.ts,
+      });
+    }
 
     return res.status(isTimeout ? 504 : 502).json({
       error:  isTimeout ? 'Koha skadoi. Provo përsëri.' : 'Të gjithë proxy-t dështuan.',

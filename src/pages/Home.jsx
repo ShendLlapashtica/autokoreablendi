@@ -179,8 +179,15 @@ export default function Home() {
 
         newCars = data.results || data.SearchResults || [];
         tot     = data.total ?? data.Count ?? 0;
-        setFromCache(null);
-        writeCarsCache(cacheKey, { results: newCars, total: tot });
+        if (data.stale) {
+          // Live fetch failed server-side too, but the API had a shared
+          // last-known-good copy for this query (see api/cars.js) — still
+          // real data, just not fresh.
+          setFromCache(data.cachedAt || Date.now());
+        } else {
+          setFromCache(null);
+          writeCarsCache(cacheKey, { results: newCars, total: tot });
+        }
       } catch (liveErr) {
         // Live fetch failed (e.g. Encar/proxy outage) — fall back to the
         // last successful response for this exact query, if we have one,
