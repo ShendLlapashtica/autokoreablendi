@@ -333,8 +333,14 @@ async function runSearch(parts, offset, count, signal, sortKey = 'ModifiedDate')
   return Promise.any([
     attempt(encarUrl,                                          false, signal, 'direct',    BROWSER_HEADERS),
     attempt(`https://api.allorigins.win/get?url=${enc}`,       true,  signal, 'allorigins', {}),
-    attempt(`https://corsproxy.io/?${enc}`,                    false, signal, 'corsproxy',  {}),
     attempt(`https://api.codetabs.com/v1/proxy?quest=${enc}`,  false, signal, 'codetabs',   {}),
+    // corsproxy.io now rejects server-side callers outright ("Server-side
+    // requests are not allowed on your plan") — permanently dead for this
+    // use case, not a transient outage, so dropped in favor of cors.lol
+    // (verified live 2026-08-20: returns real Encar data, though its own
+    // per-caller rate limit kicks in fast under repeat traffic — still a
+    // net-positive extra attempt in this race, not a guaranteed hit).
+    attempt(`https://api.cors.lol/?url=${enc}`,                false, signal, 'corslol',   {}),
   ]);
 }
 

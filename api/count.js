@@ -35,6 +35,7 @@ export default async function handler(req, res) {
     const r = await Promise.any([
       fetch(encarUrl, { signal: ctrl.signal, headers: BROWSER_HEADERS }),
       fetch(`https://api.allorigins.win/get?url=${enc}`, { signal: ctrl.signal }),
+      fetch(`https://api.cors.lol/?url=${enc}`, { signal: ctrl.signal }),
     ]);
     clearTimeout(timer);
     const text = await r.text();
