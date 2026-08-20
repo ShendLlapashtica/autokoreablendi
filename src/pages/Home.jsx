@@ -8,6 +8,7 @@ import { TRUST_CHECKLIST, INFO_BLOCKS } from '../lib/trustContent.js';
 import { BRANDS } from '../lib/brandModels.js';
 import { getBrandLogo } from '../lib/logos.js';
 import { parseSearchQuery } from '../lib/search.js';
+import { readCarsCache, writeCarsCache } from '../lib/carsCache.js';
 
 function MarqueeItem({ brand }) {
   const [broken, setBroken] = useState(false);
@@ -84,6 +85,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [done, setDone]       = useState(false);
   const [error, setError]     = useState(null);
+  const [fromCache, setFromCache] = useState(null); // timestamp of cached data being shown, or null if live
   const [filters, setFilters] = useState(() => filtersFromParams(searchParams));
   const [heroSearch, setHeroSearch] = useState(keyword);
 
@@ -167,13 +169,31 @@ export default function Home() {
       if (flt.priceTo)   params.set('priceTo', flt.priceTo);
       if (flt.sort)      params.set('sort', flt.sort);
 
-      const r    = await fetch(`/api/cars?${params}`);
-      const data = await r.json();
-      if (sid !== session.current) return;
-      if (data.error) throw new Error(data.error);
+      const cacheKey = params.toString();
 
-      const newCars = data.results || data.SearchResults || [];
-      const tot     = data.total ?? data.Count ?? 0;
+      let newCars, tot;
+      try {
+        const r    = await fetch(`/api/cars?${params}`);
+        const data = await r.json();
+        if (data.error) throw new Error(data.error);
+
+        newCars = data.results || data.SearchResults || [];
+        tot     = data.total ?? data.Count ?? 0;
+        setFromCache(null);
+        writeCarsCache(cacheKey, { results: newCars, total: tot });
+      } catch (liveErr) {
+        // Live fetch failed (e.g. Encar/proxy outage) — fall back to the
+        // last successful response for this exact query, if we have one,
+        // instead of a hard empty/error state. Still surfaces the real
+        // error if there's nothing cached to fall back to.
+        const cached = readCarsCache(cacheKey);
+        if (!cached) throw liveErr;
+        newCars = cached.results;
+        tot     = cached.total;
+        setFromCache(cached.ts);
+      }
+
+      if (sid !== session.current) return;
 
       setCars(prev => {
         const next = replace ? newCars : [...prev, ...newCars];
@@ -353,6 +373,12 @@ export default function Home() {
         {error && (
           <div className="mb-6 p-4 bg-red-900/20 border border-red-500/25 rounded-xl text-red-300 text-sm">
             ⚠ {error}
+          </div>
+        )}
+
+        {fromCache && !error && (
+          <div className="mb-6 p-4 bg-amber-900/20 border border-amber-500/25 rounded-xl text-amber-300 text-sm">
+            ⚠ Nuk arritëm të lidhemi me listimet live tani — po shfaqim rezultatet e ruajtura nga {new Date(fromCache).toLocaleString('sq-AL')}. Çmimet/disponueshmëria mund të kenë ndryshuar.
           </div>
         )}
 
