@@ -429,10 +429,24 @@ async function substringSearch(keyword, manufacturer, offset, count, signal, ext
     return { Count: 0, SearchResults: [] };
   }
 
+  // A generic short token (e.g. "e", meant to catch things like BMW's
+  // E90/E46/E39-style chassis codes) can coincidentally prefix-match dozens
+  // of unrelated Model variants across an entire brand's lineup — verified
+  // live with a stray Albanian article ("e" from "e kuqe"/red) discovering
+  // 50+ distinct BMW generations. Each variant below fires its own 4-way
+  // proxy fan-out, so an unbounded discovery set blows past the request
+  // timeout. Keep only the highest-scoring variants — genuine matches (tier
+  // 1/2, scored 50-100) always survive a cap this size; it's only the long
+  // tail of weak coincidental hits that gets dropped.
+  const MAX_VARIANTS = 20;
+  const rankedVariants = variantScores.size <= MAX_VARIANTS
+    ? variantScores
+    : new Map([...variantScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, MAX_VARIANTS));
+
   // Each discovered variant gets its own real exact-facet query (in
   // parallel) so its Count and rows come straight from Encar, not a sample.
   const variantResults = await Promise.all(
-    [...variantScores.entries()].map(async ([modelValue, score]) => {
+    [...rankedVariants.entries()].map(async ([modelValue, score]) => {
       try {
         const data = await runSearch([...scanParts, `Model.${modelValue}`], 0, 1000, signal, sortKey);
         return { score, data };
