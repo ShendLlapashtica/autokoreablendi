@@ -85,7 +85,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [done, setDone]       = useState(false);
   const [error, setError]     = useState(null);
-  const [fromCache, setFromCache] = useState(null); // timestamp of cached data being shown, or null if live
   const [filters, setFilters] = useState(() => filtersFromParams(searchParams));
   const [heroSearch, setHeroSearch] = useState(keyword);
 
@@ -179,15 +178,7 @@ export default function Home() {
 
         newCars = data.results || data.SearchResults || [];
         tot     = data.total ?? data.Count ?? 0;
-        if (data.stale) {
-          // Live fetch failed server-side too, but the API had a shared
-          // last-known-good copy for this query (see api/cars.js) — still
-          // real data, just not fresh.
-          setFromCache(data.cachedAt || Date.now());
-        } else {
-          setFromCache(null);
-          writeCarsCache(cacheKey, { results: newCars, total: tot });
-        }
+        if (!data.stale) writeCarsCache(cacheKey, { results: newCars, total: tot });
       } catch (liveErr) {
         // Live fetch failed (e.g. Encar/proxy outage) — fall back to the
         // last successful response for this exact query, if we have one,
@@ -197,7 +188,6 @@ export default function Home() {
         if (!cached) throw liveErr;
         newCars = cached.results;
         tot     = cached.total;
-        setFromCache(cached.ts);
       }
 
       if (sid !== session.current) return;
@@ -380,12 +370,6 @@ export default function Home() {
         {error && (
           <div className="mb-6 p-4 bg-red-900/20 border border-red-500/25 rounded-xl text-red-300 text-sm">
             ⚠ {error}
-          </div>
-        )}
-
-        {fromCache && !error && (
-          <div className="mb-6 p-4 bg-amber-900/20 border border-amber-500/25 rounded-xl text-amber-300 text-sm">
-            ⚠ Nuk arritëm të lidhemi me listimet live tani — po shfaqim rezultatet e ruajtura nga {new Date(fromCache).toLocaleString('sq-AL')}. Çmimet/disponueshmëria mund të kenë ndryshuar.
           </div>
         )}
 
