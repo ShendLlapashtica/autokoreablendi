@@ -31,11 +31,18 @@ export default async function handler(req, res) {
   const timer = setTimeout(() => ctrl.abort(), 9000);
   const enc   = encodeURIComponent(encarUrl);
 
+  // A plain fetch() *fulfills* on any HTTP response, including a proxy's own
+  // 429/error page — without checking r.ok, Promise.any can pick a fast,
+  // non-JSON error response as the "winner" over a slower real success.
+  function okOnly(p) {
+    return p.then(r => r.ok ? r : Promise.reject(new Error(`HTTP ${r.status}`)));
+  }
+
   try {
     const r = await Promise.any([
-      fetch(encarUrl, { signal: ctrl.signal, headers: BROWSER_HEADERS }),
-      fetch(`https://api.allorigins.win/get?url=${enc}`, { signal: ctrl.signal }),
-      fetch(`https://api.cors.lol/?url=${enc}`, { signal: ctrl.signal }),
+      okOnly(fetch(encarUrl, { signal: ctrl.signal, headers: BROWSER_HEADERS })),
+      okOnly(fetch(`https://api.allorigins.win/get?url=${enc}`, { signal: ctrl.signal })),
+      okOnly(fetch(`https://api.cors.lol/?url=${enc}`, { signal: ctrl.signal })),
     ]);
     clearTimeout(timer);
     const text = await r.text();
