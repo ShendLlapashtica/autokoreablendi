@@ -4,6 +4,7 @@ import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import Home from './pages/Home.jsx';
 import CarDetail from './pages/CarDetail.jsx';
+import GetKey from './pages/GetKey.jsx';
 import { CountryProvider } from './contexts/CountryContext.jsx';
 import './index.css';
 
@@ -29,6 +30,7 @@ export default function App() {
           <Routes>
             <Route path="/"        element={<Home />} />
             <Route path="/car/:id" element={<CarDetailMounted />} />
+            <Route path="/get-key" element={<GetKey />} />
           </Routes>
           <Footer />
         </div>
