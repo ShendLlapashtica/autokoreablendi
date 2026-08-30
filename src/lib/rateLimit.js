@@ -23,6 +23,7 @@
 //              req.paidMaxCount (blank = site-wide default of 500)
 
 import { timingSafeEqual } from 'crypto';
+import { freeKeyLabel } from './freeKeys.js';
 
 const DAILY_LIMIT = 100;
 
@@ -206,6 +207,17 @@ export async function checkApiKey(req, res) {
   for (const [validKey, name] of loadKeys()) {
     if (safeEqual(key, validKey)) { label = name; break; }
   }
+
+  // Not a static env-var key — check the dynamic (Redis) free-tier store, where
+  // auto-issued keys live (see freeKeys.js). These are validated by exact Redis
+  // lookup of a high-entropy token rather than a constant-time compare against a
+  // known list; the token's own secrecy is the protection. Labeled by owner
+  // email so each auto-issued key gets its own independent daily quota below.
+  if (!label) {
+    const email = await freeKeyLabel(key);
+    if (email) label = `dyn:${email}`;
+  }
+
   if (!label) {
     res.status(401).json({ error: 'Invalid API key.' });
     return false;
