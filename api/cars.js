@@ -1,7 +1,7 @@
 // Encar reverse-engineering proxy — uncapped, multi-fallback
 // Supports full pagination over 200k+ listings
 import { checkApiKey } from '../src/lib/rateLimit.js';
-import { cacheGet, cacheSet, cacheKeyFromQuery } from '../src/lib/serverCache.js';
+import { cacheGet, cacheSet, cacheKeyFromQuery, FRESH_WINDOW_MS } from '../src/lib/serverCache.js';
 
 // Encar's Price field is in 만원 (manwon = 10,000 KRW) units, but the
 // frontend's price filter dropdowns are labeled in EUR — matches
@@ -153,8 +153,9 @@ const TRANSMISSION_MAP = {
   cvt:       'CVT',
 };
 
-// Albanian/English color → Korean Encar Color (verified live facet values,
-// top ~9 by listing count covers ~96% of all live inventory)
+// Albanian/English color → Korean Encar Color (verified live facet values +
+// counts, pulled directly from Encar's own iNav facet metadata on
+// 2026-08-26 — top 16 by listing count covers ~98% of all live inventory)
 const COLOR_MAP = {
   white: '흰색', ebardhe: '흰색',
   black: '검정색', ezeze: '검정색',
@@ -165,6 +166,13 @@ const COLOR_MAP = {
   pearl: '진주색',
   red: '빨간색', ekuqe: '빨간색',
   skyblue: '하늘색',
+  green: '녹색', jeshile: '녹색', gjelber: '녹색', egjelber: '녹색',
+  brown: '갈색', kafe: '갈색',
+  yellow: '노란색', verdhe: '노란색', everdhe: '노란색',
+  orange: '주황색', portokalli: '주황색',
+  purple: '보라색', vjollce: '보라색', evjollce: '보라색',
+  pink: '분홍색', roze: '분홍색', eroze: '분홍색',
+  gold: '금색', arte: '금색', earte: '금색',
 };
 
 // Case-insensitive dictionary lookup — returns the matched dictionary key, or null.
@@ -328,16 +336,33 @@ function qualityScore(car) {
   return score;
 }
 
-async function runSearch(parts, offset, count, signal, sortKey = 'ModifiedDate') {
+/**
+ * The exact Encar URL a search resolves to.
+ *
+ * Extracted so the SAME string the server tried can be handed to the browser
+ * when every server-side egress is blocked. Encar serves
+ * `Access-Control-Allow-Origin: *` (verified 2026-09-14), so a visitor can
+ * fetch it from their own connection — the one egress not on the CloudFront
+ * WAF list, which on that date had Vercel, AWS, Cloudflare and Deno Deploy on
+ * it simultaneously while every free public CORS proxy was dead.
+ *
+ * Building the query in one place matters: a hand-ported client-side copy
+ * would drift from the server's filter semantics, and the failure mode of
+ * that drift is silently returning cars that do not match the search.
+ */
+export function buildEncarUrl(parts, offset, count, sortKey = 'ModifiedDate') {
   const allParts = ['SellType.일반', 'Condition.Inspection', ...parts];
   const filter = `(And.Hidden.N._.${allParts.join('._.')}.)`;
-
-  const encarUrl = `https://api.encar.com/search/car/list/general?${new URLSearchParams({
+  return `https://api.encar.com/search/car/list/general?${new URLSearchParams({
     count: 'true',
     q:     filter,
     sr:    `|${sortKey}|${offset}|${count}`,
     inav:  '|Metadata|Sort',
   })}`;
+}
+
+async function runSearch(parts, offset, count, signal, sortKey = 'ModifiedDate') {
+  const encarUrl = buildEncarUrl(parts, offset, count, sortKey);
   const enc = encodeURIComponent(encarUrl);
 
   return Promise.any([
@@ -555,7 +580,11 @@ export default async function handler(req, res) {
   }
 
   if (q.color) {
-    const mapped = COLOR_MAP[q.color.toLowerCase().trim()] ?? q.color;
+    // Albanian color words carry a gender article ("e kuqe", "e bardhe") that
+    // dictionary keys omit (ekuqe, ebardhe) — strip spaces before matching so
+    // the natural-language form isn't silently treated as an unknown color.
+    const normalized = q.color.toLowerCase().replace(/\s+/g, '').trim();
+    const mapped = COLOR_MAP[normalized] ?? q.color;
     commonParts.push(`Color.${mapped}`);
   }
 
@@ -594,9 +623,23 @@ export default async function handler(req, res) {
   // every request's latency, not just a safety net — kept short so a
   // failing live attempt falls through to the cors.lol/cache race quickly
   // instead of visitors staring at a spinner for 9+ seconds.
+  const cacheKey = cacheKeyFromQuery('autovg:cache:cars', q);
+
+  // Cache-first: a query answered in the last FRESH_WINDOW_MS is served
+  // straight from Redis, no live Encar/proxy attempt at all. See
+  // serverCache.js for why.
+  const freshCached = await cacheGet(cacheKey);
+  if (freshCached && Date.now() - freshCached.ts < FRESH_WINDOW_MS) {
+    return res.status(200).json({
+      total:   freshCached.total,
+      page,
+      count:   freshCached.results.length,
+      results: freshCached.results,
+    });
+  }
+
   const ctrl  = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 3000);
-  const cacheKey = cacheKeyFromQuery('autovg:cache:cars', q);
 
   try {
     // Plain unfiltered homepage browsing — no brand/model/keyword narrowing
@@ -685,7 +728,9 @@ export default async function handler(req, res) {
     // Live fetch (direct + every proxy) failed — serve the last-known-good
     // response for this exact query, if any visitor has ever gotten one,
     // instead of a hard error. Still marked `stale` so the UI can say so.
-    const cached = await cacheGet(cacheKey);
+    // Reuses the freshCached lookup from above (already fetched, just too
+    // old to skip the live attempt) instead of hitting Redis again.
+    const cached = freshCached ?? await cacheGet(cacheKey);
     if (cached) {
       return res.status(200).json({
         total:    cached.total,
@@ -697,10 +742,78 @@ export default async function handler(req, res) {
       });
     }
 
+    // LAST RESORT: the exact query has no cache entry, and every proxy is
+    // down. Rather than return nothing, fall back to the unfiltered cache --
+    // the entry the homepage populates, which is the one query that is always
+    // warm.
+    //
+    // Why this exists: on 2026-09-14 Encar's CloudFront began blocking the
+    // Deno relay's egress (403 "Request blocked. Generated by cloudfront")
+    // while allorigins/codetabs/corslol were simultaneously 522/522/429. The
+    // site itself kept working -- GET /api/cars returned 157,489 cars from
+    // cache -- but any query nobody had run before 11 September fell straight
+    // through to this branch and 504'd. An integrator testing `q=bmw x5`
+    // concluded the whole API was dead while the homepage was serving fine.
+    //
+    // The filters CANNOT be honoured from this entry, so this is flagged
+    // `filtersApplied: false` and the caller is told exactly which filters
+    // were dropped. Returning unfiltered cars silently would be worse than
+    // the 504: a client would render them as matches for a search they do not
+    // satisfy. Anything that wants strictness can check the flag and refuse.
+    const fallback = await cacheGet(cacheKeyFromQuery('autovg:cache:cars', {}));
+    if (fallback?.results?.length) {
+      const dropped = Object.entries(q)
+        .filter(([k, v]) => v !== '' && v != null && !['page', 'count'].includes(k))
+        .map(([k]) => k);
+      // Honour `count` even here. The first cut returned the whole cached
+      // page regardless, so a caller asking for 2 got 24 -- a caller cannot
+      // trust ANY field of a degraded response if the one parameter that is
+      // still satisfiable is ignored.
+      const sliced = fallback.results.slice(0, Math.max(1, count));
+      return res.status(200).json({
+        total:    fallback.total,
+        page,
+        count:    sliced.length,
+        results:  sliced,
+        stale:    true,
+        cachedAt: fallback.ts,
+        filtersApplied: false,
+        droppedFilters: dropped,
+        // The browser can do what this function cannot. Encar sends
+        // Access-Control-Allow-Origin: *, so a visitor fetches this URL from
+        // their own connection and gets LIVE, CORRECTLY FILTERED results —
+        // the client swaps them in over these cached unfiltered ones. Only
+        // useful to a real browser: a server-to-server caller has no such
+        // egress and should keep reading filtersApplied instead.
+        retryFromBrowser: buildEncarUrl(
+          [...identityParts, ...commonParts],
+          offset,
+          count,
+          sortKey,
+        ),
+        notice: 'Upstream unavailable and this query was never cached. These are cached UNFILTERED listings -- they do not match the requested filters. Check filtersApplied before displaying as search results.',
+        detail,
+      });
+    }
+
+    // No cache to fall back on either — but the browser can still rescue this.
+    //
+    // A deployment with no Redis configured (the clone sites) never reaches
+    // the cached branch above, so it used to return a bare 504 carrying no way
+    // forward. The browser-retry URL costs nothing to include and does not
+    // depend on cache existing, so it belongs on BOTH failure paths. Status
+    // stays 504 because the server genuinely failed; a client that cannot act
+    // on the hint is not misled.
     return res.status(isTimeout ? 504 : 502).json({
       error:  isTimeout ? 'Koha skadoi. Provo përsëri.' : 'Të gjithë proxy-t dështuan.',
       code:   isTimeout ? 'TIMEOUT' : 'ALL_FAILED',
       detail,
+      retryFromBrowser: buildEncarUrl(
+        [...identityParts, ...commonParts],
+        offset,
+        count,
+        sortKey,
+      ),
     });
   }
 }
