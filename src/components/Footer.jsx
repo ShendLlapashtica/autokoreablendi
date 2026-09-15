@@ -90,22 +90,28 @@ export default function Footer() {
           </Link>
         </div>
 
-        {/* Build credit. One link, not a row of them -- the whole line goes
-            to mail, which is the only action it should ever produce.
-            Pronounced on purpose: Montserrat (font-display, the heading face)
-            rather than the body Inter, uppercase, and widely tracked, so at
-            11px it reads as a stamped mark instead of small print. The
-            address carries full-strength brand red; the sentence that frames
-            it sits back at 65% so the eye lands on the address. */}
-        <div className="flex justify-center sm:justify-end mt-4">
+        {/* Build credit. The sentence stays flat text; the address is a real
+            CTA -- same .btn-primary language as the rest of the site so it
+            reads as something to press, but scaled down (11px, tighter
+            padding) so it never competes with the salon's own WhatsApp and
+            Kerko buttons. Montserrat + uppercase + wide tracking on both
+            halves keeps it a single stamped mark rather than a sentence with
+            a button stuck on the end. */}
+        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-3 gap-y-2 mt-4">
+          <span
+            className="font-display font-bold uppercase"
+            style={{ color: '#B50909', opacity: 0.65, fontSize: '11px', letterSpacing: '0.16em' }}
+          >
+            Kjo faqe u zhvillua nga shend.dev
+          </span>
           <a
             href="mailto:info@shend.dev"
-            className="font-display font-bold uppercase transition-opacity hover:opacity-75"
-            style={{ color: '#B50909', fontSize: '11px', letterSpacing: '0.16em' }}
+            aria-label="Kontakt: info@shend.dev"
+            className="btn-primary font-display uppercase"
+            style={{ fontSize: '11px', letterSpacing: '0.12em', padding: '8px 14px', borderRadius: '8px' }}
           >
-            <span style={{ opacity: 0.65 }}>Kjo faqe u zhvillua nga shend.dev</span>
-            <span aria-hidden="true" style={{ opacity: 0.4 }}>{' · '}</span>
-            <span>info@shend.dev</span>
+            <Mail className="w-3.5 h-3.5" aria-hidden="true" />
+            Kontakt: info@shend.dev
           </a>
         </div>
       </div>
