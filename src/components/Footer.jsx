@@ -89,6 +89,41 @@ export default function Footer() {
             Kthehu tek fillimi
           </Link>
         </div>
+
+        {/* Build credit. Deliberately quiet as a whole -- it sits under the
+            copyright line, not in it -- but weighted inside itself: the email
+            is the thing a visitor should be able to read and act on, so it
+            carries the brightest token and the most weight. The phone is the
+            opposite: present for anyone who wants it, never competing with
+            the site's own contact details above. */}
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 mt-4 text-xs"
+             style={{ color: 'var(--text-4)' }}>
+          <span>Powered by</span>
+          <a
+            href="https://shend.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold transition-colors hover:text-red-400"
+            style={{ color: 'var(--text-2)' }}
+          >
+            shend.dev
+          </a>
+          <span aria-hidden="true" style={{ opacity: 0.4 }}>·</span>
+          <a
+            href="mailto:info@shend.dev"
+            className="font-semibold transition-colors hover:text-red-400"
+            style={{ color: 'var(--text-1)', letterSpacing: '0.01em' }}
+          >
+            info@shend.dev
+          </a>
+          <a
+            href="tel:+38349644168"
+            className="transition-colors hover:text-red-400"
+            style={{ color: 'var(--text-4)', opacity: 0.5, fontSize: '11px' }}
+          >
+            +383 49 644 168
+          </a>
+        </div>
       </div>
     </footer>
   );
