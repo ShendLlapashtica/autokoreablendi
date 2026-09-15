@@ -90,39 +90,22 @@ export default function Footer() {
           </Link>
         </div>
 
-        {/* Build credit, right-aligned under the copyright bar and carried in
-            the brand red. Hierarchy is held with weight and opacity rather
-            than with different hues, so the whole block reads as one mark:
-            the email is full-strength brand red and semibold because it is
-            the thing worth acting on, the wordmark sits just under it, and
-            the phone is the same red at 45% -- there for anyone who looks,
-            never competing with the salon's own number above. Falls back to
-            centred on narrow screens, where a right edge is meaningless. */}
-        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-2 gap-y-1 mt-4 text-xs">
-          <span style={{ color: '#B50909', opacity: 0.6 }}>Powered by</span>
-          <a
-            href="https://shend.dev"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold transition-opacity hover:opacity-80"
-            style={{ color: '#B50909', opacity: 0.85 }}
-          >
-            shend.dev
-          </a>
-          <span aria-hidden="true" style={{ color: '#B50909', opacity: 0.35 }}>·</span>
+        {/* Build credit. One link, not a row of them -- the whole line goes
+            to mail, which is the only action it should ever produce.
+            Pronounced on purpose: Montserrat (font-display, the heading face)
+            rather than the body Inter, uppercase, and widely tracked, so at
+            11px it reads as a stamped mark instead of small print. The
+            address carries full-strength brand red; the sentence that frames
+            it sits back at 65% so the eye lands on the address. */}
+        <div className="flex justify-center sm:justify-end mt-4">
           <a
             href="mailto:info@shend.dev"
-            className="font-semibold transition-opacity hover:opacity-80"
-            style={{ color: '#B50909', letterSpacing: '0.01em' }}
+            className="font-display font-bold uppercase transition-opacity hover:opacity-75"
+            style={{ color: '#B50909', fontSize: '11px', letterSpacing: '0.16em' }}
           >
-            info@shend.dev
-          </a>
-          <a
-            href="tel:+38349644168"
-            className="transition-opacity hover:opacity-80"
-            style={{ color: '#B50909', opacity: 0.45, fontSize: '11px' }}
-          >
-            +383 49 644 168
+            <span style={{ opacity: 0.65 }}>Kjo faqe u zhvillua nga shend.dev</span>
+            <span aria-hidden="true" style={{ opacity: 0.4 }}>{' · '}</span>
+            <span>info@shend.dev</span>
           </a>
         </div>
       </div>
