@@ -90,36 +90,37 @@ export default function Footer() {
           </Link>
         </div>
 
-        {/* Build credit. Deliberately quiet as a whole -- it sits under the
-            copyright line, not in it -- but weighted inside itself: the email
-            is the thing a visitor should be able to read and act on, so it
-            carries the brightest token and the most weight. The phone is the
-            opposite: present for anyone who wants it, never competing with
-            the site's own contact details above. */}
-        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 mt-4 text-xs"
-             style={{ color: 'var(--text-4)' }}>
-          <span>Powered by</span>
+        {/* Build credit, right-aligned under the copyright bar and carried in
+            the brand red. Hierarchy is held with weight and opacity rather
+            than with different hues, so the whole block reads as one mark:
+            the email is full-strength brand red and semibold because it is
+            the thing worth acting on, the wordmark sits just under it, and
+            the phone is the same red at 45% -- there for anyone who looks,
+            never competing with the salon's own number above. Falls back to
+            centred on narrow screens, where a right edge is meaningless. */}
+        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-2 gap-y-1 mt-4 text-xs">
+          <span style={{ color: '#B50909', opacity: 0.6 }}>Powered by</span>
           <a
             href="https://shend.dev"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-semibold transition-colors hover:text-red-400"
-            style={{ color: 'var(--text-2)' }}
+            className="font-semibold transition-opacity hover:opacity-80"
+            style={{ color: '#B50909', opacity: 0.85 }}
           >
             shend.dev
           </a>
-          <span aria-hidden="true" style={{ opacity: 0.4 }}>·</span>
+          <span aria-hidden="true" style={{ color: '#B50909', opacity: 0.35 }}>·</span>
           <a
             href="mailto:info@shend.dev"
-            className="font-semibold transition-colors hover:text-red-400"
-            style={{ color: 'var(--text-1)', letterSpacing: '0.01em' }}
+            className="font-semibold transition-opacity hover:opacity-80"
+            style={{ color: '#B50909', letterSpacing: '0.01em' }}
           >
             info@shend.dev
           </a>
           <a
             href="tel:+38349644168"
-            className="transition-colors hover:text-red-400"
-            style={{ color: 'var(--text-4)', opacity: 0.5, fontSize: '11px' }}
+            className="transition-opacity hover:opacity-80"
+            style={{ color: '#B50909', opacity: 0.45, fontSize: '11px' }}
           >
             +383 49 644 168
           </a>
