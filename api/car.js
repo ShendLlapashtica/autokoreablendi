@@ -102,6 +102,20 @@ export default async function handler(req, res) {
     return res.status(200).json(data);
   } catch (err) {
     clearTimeout(timer);
-    return res.status(502).json({ error: 'Could not fetch car detail', detail: err.message });
+    // Same recovery the listing uses: when every server route to Encar is
+    // blocked, hand the browser the URL we could not reach. A visitor's IP is
+    // not on Encar's blocklist. Without this a SHARED LINK to a car opens on
+    // "not found" while the data is one fetch away -- and a shared link is
+    // exactly how a listing travels from an importer to their customer.
+    //
+    // listUrl, not viewUrl: /view/general does NOT send
+    // Access-Control-Allow-Origin, so a browser fetch of it dies on CORS
+    // (verified live: "TypeError: Failed to fetch"). /list/general does, and
+    // filtered to this CarId it returns the same vehicle.
+    return res.status(502).json({
+      error: 'Could not fetch car detail',
+      detail: err.message,
+      retryFromBrowser: listUrl,
+    });
   }
 }

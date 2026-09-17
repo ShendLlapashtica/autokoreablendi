@@ -119,6 +119,20 @@ function safeEqual(a, b) {
   return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
 }
 
+// Upstash's REST pipeline returns each element as either [error, result] or
+// as { result } depending on account/version — freeKeys.js has tolerated both
+// since it was written. This function did not: it read only the array shape
+// (`data[0][1]`), so on an account returning the object shape every INCR
+// silently yielded undefined -> null, which callers treat as "Redis not
+// configured, don't count". The effect was that NO quota was enforced anywhere
+// — free-tier 100/day, paid 200k/day and the anonymous per-IP cap all degraded
+// to unlimited, with no X-RateLimit headers to show it. Parse both shapes.
+function readResult(item) {
+  if (Array.isArray(item)) return item[1];
+  if (item && typeof item === 'object') return item.result;
+  return item;
+}
+
 async function redisIncr(key, ttlSeconds = 86400) {
   const url   = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -133,9 +147,11 @@ async function redisIncr(key, ttlSeconds = 86400) {
         ['EXPIRE', key, ttlSeconds],
       ]),
     });
+    if (!res.ok) return null;
     const data = await res.json();
-    // Pipeline returns [[null, count], [null, 1]]
-    return data?.[0]?.[1] ?? null;
+    // Pipeline returns [[null, count], [null, 1]] or [{result:count}, {result:1}]
+    const count = Array.isArray(data) ? readResult(data[0]) : null;
+    return typeof count === 'number' ? count : null;
   } catch {
     return null; // Redis error — don't block the request
   }

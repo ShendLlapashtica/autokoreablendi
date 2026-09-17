@@ -64,8 +64,22 @@ export default function CarDetail() {
     let cancelled = false;
     fetch(`/api/car?id=${id}`)
       .then(r => r.json())
-      .then(data => {
+      .then(async data => {
         if (cancelled) return;
+        // When every server-side route to Encar is blocked, the API hands back
+        // the exact URL it could not reach. This browser is not on Encar's
+        // blocklist, so fetch it here rather than showing "not found" on a
+        // shared link -- which is exactly how a listing gets passed around.
+        if (data.retryFromBrowser) {
+          try {
+            const live = await fetch(data.retryFromBrowser);
+            if (live.ok) {
+              const j = await live.json();
+              const car = j?.SearchResults?.[0] || (j?.Id || j?.vehicleId ? j : null);
+              if (car) { setCar(car); return; }
+            }
+          } catch { /* fall through to the server's error below */ }
+        }
         if (data.error) throw new Error(data.error);
         setCar(data.SearchResults?.[0] || data);
       })
