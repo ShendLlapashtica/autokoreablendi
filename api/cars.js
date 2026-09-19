@@ -50,6 +50,20 @@ const BROWSER_HEADERS = {
 const DENO_RELAY = 'https://autokoreablendi-encar-relay.shendllapashtica.deno.net/';
 const DENO_RELAY_HEADERS = { 'x-relay-secret': process.env.DENO_RELAY_SECRET || '' };
 
+// Relay running on a RESIDENTIAL connection (local-relay/relay.mjs behind a
+// tunnel). Encar's block is on datacenter egress -- AWS, Cloudflare, Vercel
+// and Deno Deploy were all confirmed blocked on 2026-09-14 while a request
+// from a home connection returned live listings the same minute. So the one
+// egress that still works is a machine on an ordinary ISP.
+//
+// Entirely optional and OFF unless LOCAL_RELAY_URL is set: when the env var
+// is absent the attempt is never added to the race below, so an unconfigured
+// deployment behaves exactly as before. The tradeoff is honest -- this only
+// answers while that machine and its tunnel are up, which is why it is one
+// more rung on the ladder rather than a replacement for it.
+const LOCAL_RELAY = (process.env.LOCAL_RELAY_URL || '').trim();
+const LOCAL_RELAY_HEADERS = { 'x-relay-secret': process.env.LOCAL_RELAY_SECRET || '' };
+
 // English brand name → Korean Encar identifier
 // (BMW, Audi, Porsche etc. are stored in Encar under their own name or Korean)
 const MANUFACTURER_REVERSE = {
@@ -418,6 +432,10 @@ async function runSearch(parts, offset, count, signal, sortKey = 'ModifiedDate')
     attempt(`https://api.cors.lol/?url=${enc}`,                false, signal, 'corslol',   {}),
     // Own relay, not rate-limited by other callers — see DENO_RELAY comment above.
     attempt(`${DENO_RELAY}?url=${enc}`,                        false, signal, 'denorelay', DENO_RELAY_HEADERS),
+    // Residential egress, added only when configured (see LOCAL_RELAY above).
+    ...(LOCAL_RELAY
+      ? [attempt(`${LOCAL_RELAY}?url=${enc}`,                  false, signal, 'localrelay', LOCAL_RELAY_HEADERS)]
+      : []),
   ]);
 }
 
