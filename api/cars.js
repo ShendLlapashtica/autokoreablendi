@@ -838,6 +838,70 @@ export default async function handler(req, res) {
       });
     }
 
+    // BRAND FALLBACK, before the unfiltered one below.
+    //
+    // Cache keys are the whole query string, so manufacturer=BMW&count=200
+    // and manufacturer=BMW&count=200&yearFrom=2016 are different entries and
+    // only one of them may be warm. Dropping straight to the unfiltered cache
+    // in that case answers a request for BMWs with Audis and Benzes -- flagged
+    // filtersApplied:false, but a caller checking makes rather than flags just
+    // sees wrong cars and concludes the API is broken.
+    //
+    // A warm brand entry answers those neighbouring shapes correctly: same
+    // make, filtered in-process for whatever else the caller asked that can be
+    // evaluated here (year and price live on the car objects). Only the
+    // manufacturer is required to match; anything unmatched simply narrows.
+    if (q.manufacturer) {
+      const brandKey = cacheKeyFromQuery('autovg:cache:cars', {
+        page: '0', count: '200', yearFrom: '2016', manufacturer: q.manufacturer,
+      });
+      const brand = await cacheGet(brandKey).catch(() => null);
+      if (brand?.results?.length) {
+        const kr = MANUFACTURER_REVERSE[q.manufacturer] || q.manufacturer;
+        const yFrom = q.yearFrom ? parseInt(q.yearFrom, 10) * 100 : null;
+        const yTo   = q.yearTo   ? parseInt(q.yearTo,   10) * 100 + 99 : null;
+        const pFrom = q.priceFrom ? Number(q.priceFrom) : null;
+        const pTo   = q.priceTo   ? Number(q.priceTo)   : null;
+
+        const matched = brand.results.filter(c => {
+          if (c.Manufacturer !== kr && c.Manufacturer !== q.manufacturer) return false;
+          const y = Number(c.Year), p = Number(c.Price);
+          if (yFrom != null && Number.isFinite(y) && y < yFrom) return false;
+          if (yTo   != null && Number.isFinite(y) && y > yTo)   return false;
+          if (pFrom != null && Number.isFinite(p) && p < pFrom) return false;
+          if (pTo   != null && Number.isFinite(p) && p > pTo)   return false;
+          return true;
+        });
+
+        // An empty match must never be served: a blank grid is worse than
+        // stale cars, so that case falls through to the unfiltered branch
+        // exactly as before.
+        if (matched.length > 0) {
+          const sliced = matched.slice(offset, offset + Math.max(1, count));
+          if (sliced.length > 0) {
+            staleHeaders(res, brand.ts);
+            return res.status(200).json({
+              total:    matched.length,
+              page,
+              count:    sliced.length,
+              results:  sliced,
+              stale:    true,
+              cachedAt: brand.ts,
+              filtersApplied: true,
+              servedFrom: 'brand-cache',
+              retryFromBrowser: buildEncarUrl(
+                [...identityParts, ...commonParts],
+                offset,
+                count,
+                sortKey,
+              ),
+              detail,
+            });
+          }
+        }
+      }
+    }
+
     // LAST RESORT: the exact query has no cache entry, and every proxy is
     // down. Rather than return nothing, fall back to the unfiltered cache --
     // the entry the homepage populates, which is the one query that is always
