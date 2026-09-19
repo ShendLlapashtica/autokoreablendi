@@ -173,8 +173,45 @@ export default function Home() {
       let newCars, tot;
       try {
         const r    = await fetch(`/api/cars?${params}`);
-        const data = await r.json();
+        let   data = await r.json();
         if (data.error) throw new Error(data.error);
+
+        // Encar blocks datacenter egress, so when the server cannot reach it
+        // the response is served from cache and flagged `stale`, carrying the
+        // exact Encar URL it could not reach. A residential connection is not
+        // blocked and Encar sends Access-Control-Allow-Origin: *, so THIS
+        // browser can fetch what the server could not -- live, and filtered
+        // by the same query the server built, so results cannot drift from
+        // the filters the user actually chose.
+        //
+        // Without this the grid renders whatever day the cache was last
+        // warmed and never recovers: on 2026-09-19 the homepage was serving
+        // listings cached on the 14th while Encar answered this browser in
+        // under two seconds.
+        //
+        // Failure is deliberately silent. Any problem -- offline, an
+        // extension blocking the request, Encar itself down, a malformed
+        // body -- leaves `data` exactly as the server sent it, so the worst
+        // case is the cached cars that would have shown anyway. The grid
+        // never empties because of this block.
+        if (data.stale && data.retryFromBrowser) {
+          try {
+            const liveRes = await fetch(data.retryFromBrowser);
+            if (liveRes.ok) {
+              const live = await liveRes.json();
+              if (Array.isArray(live.SearchResults) && live.SearchResults.length) {
+                data = {
+                  ...data,
+                  results: live.SearchResults,
+                  total:   live.Count ?? data.total,
+                  stale:   false,
+                };
+              }
+            }
+          } catch {
+            // keep the server's cached payload
+          }
+        }
 
         newCars = data.results || data.SearchResults || [];
         tot     = data.total ?? data.Count ?? 0;
