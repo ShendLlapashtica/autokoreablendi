@@ -77,6 +77,37 @@ export default async function handler(req, res) {
     }
   }));
 
+  // The host probe above reaches api.encar.com in ~180ms, but the search
+  // fetch dies in 15ms -- faster than the connection that succeeds, so it is
+  // failing before it leaves the process. That is not an IP block. These
+  // variants isolate which part of OUR request is responsible.
+  const searchUrl = buildEncarUrl([], 0, 2, 'ModifiedDate');
+  const variants = {
+    fullHeaders: BROWSER_HEADERS,
+    noOrigin:    (({ Origin, ...rest }) => rest)(BROWSER_HEADERS),
+    uaOnly:      { 'User-Agent': BROWSER_HEADERS['User-Agent'] },
+    noHeaders:   {},
+  };
+  const searchProbes = {};
+  for (const [name, headers] of Object.entries(variants)) {
+    const t = Date.now();
+    try {
+      const r = await fetch(searchUrl, { headers, signal: AbortSignal.timeout(6000) });
+      const txt = await r.text();
+      let count = null;
+      try { count = JSON.parse(txt).Count ?? null; } catch {}
+      searchProbes[name] = {
+        ok: count != null, status: r.status, ms: Date.now() - t,
+        count, snippet: count != null ? null : txt.slice(0, 110).replace(/s+/g, ' '),
+      };
+    } catch (err) {
+      searchProbes[name] = {
+        ok: false, ms: Date.now() - t,
+        error: [err?.message, err?.cause?.code, err?.cause?.message].filter(Boolean).join(': '),
+      };
+    }
+  }
+
   // How old is what visitors are being served from cache?
   const cached = await cacheGet(cacheKeyFromQuery('autovg:cache:cars', {})).catch(() => null);
   const ageMs  = cached?.ts ? Date.now() - cached.ts : null;
@@ -96,6 +127,7 @@ export default async function handler(req, res) {
     checkedAt: new Date().toISOString(),
     serverEgressToEncar: egress,
     hostProbes,
+    searchProbes,
     serverCache: {
       cachedAt: cached?.ts ? new Date(cached.ts).toISOString() : null,
       ageHours: ageHrs,
