@@ -14,6 +14,25 @@
 // set — a missing cache must never be why a request fails.
 const TTL_SECONDS = 14 * 24 * 60 * 60; // 14 days — long enough to ride out a multi-day outage
 
+// How long a cached response is served *without* even attempting a live
+// fetch first. Car listings don't meaningfully change minute-to-minute, so
+// this trades a few minutes of staleness for skipping the live
+// Encar+proxy race entirely on repeat queries — cuts both the load on
+// Vercel (no outbound fan-out fetch) and the load on the fragile upstream
+// proxy chain (see the 2026-08-20 outage), which is what was driving the
+// 504s. Same cache entry, just consulted earlier: a cache hit within this
+// window returns immediately; past it, one visitor "pays" for a live
+// refresh and everyone else rides the result until it goes stale again.
+//
+// This was imported by api/cars.js but never defined here, which crashed
+// the whole function on every /api/cars request (Node's ESM loader throws
+// on a missing named export) -- confirmed live 2026-09-19: every call
+// returned Vercel's generic FUNCTION_INVOCATION_FAILED 500, never reaching
+// this file's, or cars.js's, own error handling at all. That's what made
+// the homepage grid stop after its first cached page and "Shfaq më shumë"
+// fail outright.
+export const FRESH_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
 function creds() {
   const url   = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
