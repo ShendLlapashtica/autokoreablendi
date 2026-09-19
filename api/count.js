@@ -1,6 +1,6 @@
 // Returns just the total count for a given filter — cheap prefetch for pagination UI
 import { checkApiKey } from '../src/lib/rateLimit.js';
-import { cacheGet, cacheSet } from '../src/lib/serverCache.js';
+import { cacheGet, cacheSet, FRESH_WINDOW_MS } from '../src/lib/serverCache.js';
 
 const CACHE_KEY = 'autovg:cache:count:total';
 
@@ -23,6 +23,14 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (!await checkApiKey(req, res)) return;
+
+  // Cache-first — see api/cars.js / serverCache.js for why. The site total
+  // barely moves minute to minute, so most requests never need to touch
+  // Encar or any proxy at all.
+  const freshCached = await cacheGet(CACHE_KEY);
+  if (freshCached && Date.now() - freshCached.ts < FRESH_WINDOW_MS) {
+    return res.status(200).json({ total: freshCached.total });
+  }
 
   const encarUrl = `https://api.encar.com/search/car/list/general?${new URLSearchParams({
     count: 'true',
@@ -59,7 +67,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ total: data.Count });
   } catch {
     clearTimeout(timer);
-    const cached = await cacheGet(CACHE_KEY);
+    const cached = freshCached ?? await cacheGet(CACHE_KEY);
     if (cached) return res.status(200).json({ total: cached.total, stale: true, cachedAt: cached.ts });
     return res.status(502).json({ error: 'count fetch failed' });
   }

@@ -14,6 +14,17 @@
 // set — a missing cache must never be why a request fails.
 const TTL_SECONDS = 14 * 24 * 60 * 60; // 14 days — long enough to ride out a multi-day outage
 
+// How long a cached response is served *without* even attempting a live
+// fetch first. Car listings don't meaningfully change minute-to-minute, so
+// this trades a few minutes of staleness for skipping the live
+// Encar+proxy race entirely on repeat queries — cuts both the load on
+// Vercel (no outbound fan-out fetch) and the load on the fragile upstream
+// proxy chain (see the 2026-08-20 outage), which is what was driving the
+// 504s. Same cache entry, just consulted earlier: a cache hit within this
+// window returns immediately; past it, one visitor "pays" for a live
+// refresh and everyone else rides the result until it goes stale again.
+export const FRESH_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
 function creds() {
   const url   = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
