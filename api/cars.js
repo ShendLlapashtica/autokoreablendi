@@ -66,7 +66,7 @@ const LOCAL_RELAY_HEADERS = { 'x-relay-secret': process.env.LOCAL_RELAY_SECRET |
 
 // English brand name → Korean Encar identifier
 // (BMW, Audi, Porsche etc. are stored in Encar under their own name or Korean)
-const MANUFACTURER_REVERSE = {
+export const MANUFACTURER_REVERSE = {
   'Hyundai':         '현대',
   'Kia':             '기아',
   'Mercedes-Benz':   '벤츠',
