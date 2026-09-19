@@ -1,6 +1,15 @@
 // Encar reverse-engineering proxy — uncapped, multi-fallback
 // Supports full pagination over 200k+ listings
 import { checkApiKey } from '../src/lib/rateLimit.js';
+import dns from 'node:dns';
+// Encar's egress failure on Vercel is a 17ms "fetch failed" -- far too fast
+// for a round trip to Korea and far too fast for a WAF page, which would be
+// an HTTP response, not a dead socket. That signature is what a dual-stack
+// resolver produces when it prefers an AAAA record whose route is dead.
+// Pinning to IPv4 costs nothing if the diagnosis is wrong and restores egress
+// if it is right.
+dns.setDefaultResultOrder('ipv4first');
+
 import { cacheGet, cacheSet, cacheKeyFromQuery, FRESH_WINDOW_MS } from '../src/lib/serverCache.js';
 
 // Encar's Price field is in 만원 (manwon = 10,000 KRW) units, but the
