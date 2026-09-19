@@ -253,7 +253,24 @@ function parseKeyword(keyword) {
 }
 
 async function attempt(fetchUrl, isWrapped, signal, label, extraHeaders = {}) {
-  const r = await fetch(fetchUrl, { signal, headers: extraHeaders });
+  let r;
+  try {
+    r = await fetch(fetchUrl, { signal, headers: extraHeaders });
+  } catch (err) {
+    // Node collapses every transport-layer failure into the bare string
+    // "fetch failed" and hides the actual reason on err.cause. Unlabelled and
+    // uncaused, the aggregated detail line read "fetch failed" for weeks --
+    // indistinguishable between DNS failure, a refused connection, a TLS
+    // error and a WAF dropping the socket, which are four different problems
+    // with four different fixes. The cause code is what says which.
+    const cause = err?.cause;
+    const bits  = [label, err?.message, cause?.code, cause?.message]
+      .filter(Boolean)
+      .filter((v, i, a) => a.indexOf(v) === i);
+    const e = new Error(bits.join(': '));
+    e.cause = cause;
+    throw e;
+  }
   if (!r.ok) throw new Error(`${label}: HTTP ${r.status}`);
   const text = await r.text();
 
@@ -350,6 +367,29 @@ function qualityScore(car) {
  * would drift from the server's filter semantics, and the failure mode of
  * that drift is silently returning cars that do not match the search.
  */
+// Age of a degraded response, stated in headers as well as the body.
+//
+// A body flag is only honoured by a caller who already knows to look for it.
+// An integrator wiring us up for the first time reads status and headers, so
+// a stale response that is HTTP-indistinguishable from a fresh one reads as
+// "the API is fine, your cars are current" -- which is how 13-day-old
+// listings were served to a paying client for two weeks without anything in
+// the transaction saying otherwise. `Warning: 110` is the registered code
+// for exactly this and costs nothing to send.
+export function staleHeaders(res, cachedAt) {
+  const ageSec = cachedAt ? Math.max(0, Math.floor((Date.now() - cachedAt) / 1000)) : null;
+  res.setHeader('Warning', '110 - "Response is Stale"');
+  res.setHeader('X-Data-Stale', 'true');
+  // Deliberately NOT the standard `Age` header: that one has defined
+  // meaning for every CDN in the path, and this response is already sitting
+  // behind Vercel's edge. An X- header states the same fact and cannot change
+  // how anything caches.
+  if (ageSec != null) {
+    res.setHeader('X-Data-Age-Seconds', String(ageSec));
+    res.setHeader('X-Data-Cached-At', new Date(cachedAt).toISOString());
+  }
+}
+
 export function buildEncarUrl(parts, offset, count, sortKey = 'ModifiedDate') {
   const allParts = ['SellType.일반', 'Condition.Inspection', ...parts];
   const filter = `(And.Hidden.N._.${allParts.join('._.')}.)`;
@@ -732,6 +772,17 @@ export default async function handler(req, res) {
     // old to skip the live attempt) instead of hitting Redis again.
     const cached = freshCached ?? await cacheGet(cacheKey);
     if (cached) {
+      // These cars DO match the requested filters -- they are only old -- so
+      // the status stays 200 and the caller keeps usable data.
+      //
+      // Omitting retryFromBrowser here was the bug that froze a cached query
+      // at whatever day it was last warmed. src/lib/api.js only upgrades a
+      // response carrying that URL, so this branch -- the one serving every
+      // query anyone has ever run -- could never recover, while the rarer
+      // unfiltered branch below could. A browser client therefore sat on
+      // 13-day-old listings and never retried, which is what a paid
+      // integrator hit on 2026-09-19.
+      staleHeaders(res, cached.ts);
       return res.status(200).json({
         total:    cached.total,
         page,
@@ -739,6 +790,14 @@ export default async function handler(req, res) {
         results:  cached.results,
         stale:    true,
         cachedAt: cached.ts,
+        filtersApplied: true,
+        retryFromBrowser: buildEncarUrl(
+          [...identityParts, ...commonParts],
+          offset,
+          count,
+          sortKey,
+        ),
+        detail,
       });
     }
 
@@ -770,6 +829,19 @@ export default async function handler(req, res) {
       // trust ANY field of a degraded response if the one parameter that is
       // still satisfiable is ignored.
       const sliced = fallback.results.slice(0, Math.max(1, count));
+
+      // This response is degraded (filters dropped), and it says so in the
+      // body AND now in the headers -- Warning: 110, X-Data-Stale and
+      // X-Data-Cached-At, which an integrator reads without having to know
+      // about our in-body flags first.
+      //
+      // The STATUS deliberately stays 200. Returning 503 here would be more
+      // honest at the HTTP layer, but any caller that checks res.ok before
+      // reading the body would render nothing, and an empty car grid is not
+      // an acceptable failure mode for this site under any circumstances.
+      // Headers carry the truth; the cars stay on the page.
+      staleHeaders(res, fallback.ts);
+      res.setHeader('Retry-After', '300');
       return res.status(200).json({
         total:    fallback.total,
         page,
