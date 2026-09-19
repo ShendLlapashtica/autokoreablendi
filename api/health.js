@@ -49,6 +49,34 @@ export default async function handler(req, res) {
       .join(': ');
   }
 
+  // Which Encar hosts can this server open a socket to at all?
+  //
+  // api.encar.com is CloudFront (18.66.26.88) and that is where the
+  // client-IP block lives. www/fem/m.encar.com answer on Korean AWS origin
+  // IPs (15.165.21.222, 13.124.112.123) which are NOT CloudFront, so they may
+  // not carry the same blocklist. Knowing which hosts are reachable from here
+  // is what decides whether any server-side route exists at all -- worth far
+  // more than another guess at a proxy.
+  const hosts = ['api.encar.com', 'www.encar.com', 'fem.encar.com', 'm.encar.com'];
+  const hostProbes = {};
+  await Promise.all(hosts.map(async h => {
+    const t = Date.now();
+    try {
+      const r = await fetch(`https://${h}/`, {
+        method: 'GET',
+        headers: { 'User-Agent': BROWSER_HEADERS['User-Agent'] },
+        signal: AbortSignal.timeout(5000),
+      });
+      hostProbes[h] = { ok: true, status: r.status, ms: Date.now() - t };
+    } catch (err) {
+      hostProbes[h] = {
+        ok: false,
+        ms: Date.now() - t,
+        error: [err?.message, err?.cause?.code].filter(Boolean).join(': '),
+      };
+    }
+  }));
+
   // How old is what visitors are being served from cache?
   const cached = await cacheGet(cacheKeyFromQuery('autovg:cache:cars', {})).catch(() => null);
   const ageMs  = cached?.ts ? Date.now() - cached.ts : null;
@@ -67,6 +95,7 @@ export default async function handler(req, res) {
     verdict,
     checkedAt: new Date().toISOString(),
     serverEgressToEncar: egress,
+    hostProbes,
     serverCache: {
       cachedAt: cached?.ts ? new Date(cached.ts).toISOString() : null,
       ageHours: ageHrs,
