@@ -76,6 +76,16 @@ const LOCAL_RELAY_HEADERS = { 'x-relay-secret': process.env.LOCAL_RELAY_SECRET |
 // English brand name → Korean Encar identifier
 // (BMW, Audi, Porsche etc. are stored in Encar under their own name or Korean)
 export const MANUFACTURER_REVERSE = {
+  // Verified against Encar 2026-09-19 by querying each candidate and keeping
+  // the spelling that returned a non-zero count -- Tesla alone is 1,549 cars
+  // that previously fell through to the unfiltered fallback, so a Tesla search
+  // returned other makes entirely. Citroen, Skoda and Seat are deliberately
+  // absent: Encar lists none of them under any spelling tried.
+  'Tesla':           '테슬라',
+  'Mazda':           '마쯔다',
+  'Chrysler':        '크라이슬러',
+  'Dodge':           '닷지',
+  'Smart':           '스마트',
   'Hyundai':         '현대',
   'Kia':             '기아',
   'Mercedes-Benz':   '벤츠',
