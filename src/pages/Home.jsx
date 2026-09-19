@@ -75,6 +75,22 @@ function paramsFromFilters(f, keyword) {
   return p;
 }
 
+/**
+ * "3 orë më parë" / "5 ditë më parë" -- how old the cached listings are, in
+ * Albanian, so the banner states an age rather than an opaque timestamp.
+ * Falls back to a plain date if the value is not a usable epoch.
+ */
+function staleAge(cachedAt) {
+  const ts = typeof cachedAt === 'number' ? cachedAt : Date.parse(cachedAt);
+  if (!Number.isFinite(ts)) return 'një kohë më parë';
+  const mins = Math.max(0, Math.round((Date.now() - ts) / 60000));
+  if (mins < 60) return `${mins} minuta më parë`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours} orë më parë`;
+  const days = Math.round(hours / 24);
+  return `${days} ditë më parë`;
+}
+
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
   const keyword = searchParams.get('q') || '';
@@ -85,6 +101,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [done, setDone]       = useState(false);
   const [error, setError]     = useState(null);
+  // When the server could only serve cache, this holds when that cache was
+  // written so the page can SAY so. See the banner below.
+  const [staleAt, setStaleAt]  = useState(null);
   const [filters, setFilters] = useState(() => filtersFromParams(searchParams));
   const [heroSearch, setHeroSearch] = useState(keyword);
 
@@ -179,10 +198,21 @@ export default function Home() {
         // Encar blocks datacenter egress, so when the server cannot reach it
         // the response is served from cache and flagged `stale`, carrying the
         // exact Encar URL it could not reach. A residential connection is not
-        // blocked and Encar sends Access-Control-Allow-Origin: *, so THIS
-        // browser can fetch what the server could not -- live, and filtered
-        // by the same query the server built, so results cannot drift from
-        // the filters the user actually chose.
+        // IP-blocked, so this browser can sometimes fetch what the server
+        // could not.
+        //
+        // MEASURED 2026-09-19, and the reason this now usually fails: Encar
+        // answers 200 to a request with NO Origin header and 403 Forbidden to
+        // the same request WITH one. Every browser fetch() sends Origin, so
+        // this recovery returns 403, falls through, and the cached payload
+        // stands. The older comment here claimed Encar sends
+        // Access-Control-Allow-Origin: * -- it still does, on the 403 itself,
+        // which is why this fails silently rather than as a CORS error.
+        //
+        // The attempt is kept because it costs one request and still works
+        // from connections Encar has not blocked. What changed is that the
+        // page no longer PRETENDS it succeeded: when it doesn't, the banner
+        // below tells the visitor how old the listings are.
         //
         // Without this the grid renders whatever day the cache was last
         // warmed and never recovers: on 2026-09-19 the homepage was serving
@@ -215,6 +245,10 @@ export default function Home() {
 
         newCars = data.results || data.SearchResults || [];
         tot     = data.total ?? data.Count ?? 0;
+        // Cars sell. A five-day-old listing may already be gone, and someone
+        // enquiring about a sold car is a real cost to the business -- so
+        // stale inventory is labelled, never shown as if it were current.
+        setStaleAt(data.stale ? (data.cachedAt ?? null) : null);
         if (!data.stale) writeCarsCache(cacheKey, { results: newCars, total: tot });
       } catch (liveErr) {
         // Live fetch failed (e.g. Encar/proxy outage) — fall back to the
@@ -407,6 +441,20 @@ export default function Home() {
         {error && (
           <div className="mb-6 p-4 bg-red-900/20 border border-red-500/25 rounded-xl text-red-300 text-sm">
             ⚠ {error}
+          </div>
+        )}
+
+        {/* STALE INVENTORY IS LABELLED, NOT HIDDEN.
+            Encar was unreachable, so these listings come from cache. Showing
+            them silently is the costly failure: a car listed five days ago may
+            be sold, and a buyer who enquires about it wastes their time and
+            ours. Amber, not red -- the data is real, just old. */}
+        {staleAt && (
+          <div className="mb-6 p-4 bg-amber-900/20 border border-amber-500/25 rounded-xl text-amber-200 text-sm">
+            <span className="font-semibold">Lista nuk është e freskët.</span>{' '}
+            Encar nuk u arrit dot tani, prandaj po shfaqen të dhënat e ruajtura nga{' '}
+            <span className="font-semibold">{staleAge(staleAt)}</span>. Disa vetura mund
+            të jenë shitur tashmë — verifikoni para se të kontaktoni.
           </div>
         )}
 
