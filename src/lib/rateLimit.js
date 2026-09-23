@@ -36,6 +36,15 @@ const DAILY_LIMIT = 100;
 // traffic, not an artificial ceiling on the paid tier.
 const PAID_DAILY_LIMIT = 200000;
 
+// Paid keys temporarily switched off, by label. A label listed here is
+// rejected outright while every other paid key keeps working untouched.
+// This is deliberately label-based rather than editing PAID_API_KEYS: that
+// env var holds every paid client in one comma-separated string, so editing
+// it to drop one entry risks the others. Reactivate by removing the label
+// from this set (no key values change, so the client's existing key resumes
+// working exactly as before — nothing has to be re-issued).
+const SUSPENDED_PAID_LABELS = new Set(['partner1']);
+
 // Generous per-IP cap on anonymous (no-key) traffic — high enough that a
 // real visitor browsing/filtering/paginating the site never gets near it,
 // but bounds how hard any single script can hammer the proxy (and, in
@@ -183,6 +192,13 @@ export async function checkApiKey(req, res) {
   // free-tier path below, so paid-tier volume can't degrade it.
   for (const [validKey, { label, domain, rpm, maxCount }] of loadPaidKeys()) {
     if (!safeEqual(key, validKey)) continue;
+
+    // Checked before the origin rule below so a suspended key fails fast and
+    // the 403 doesn't disclose which domain the key was bound to.
+    if (SUSPENDED_PAID_LABELS.has(label)) {
+      res.status(403).json({ error: 'This key is currently inactive.' });
+      return false;
+    }
 
     const origin = requestOrigin(req);
     if (domain !== '*' && (!origin || !hostnameAllowed(origin, domain))) {
