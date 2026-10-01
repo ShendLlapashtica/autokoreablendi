@@ -12,6 +12,7 @@ dns.setDefaultResultOrder('ipv4first');
 
 import { cacheGet, cacheSet, cacheKeyFromQuery, FRESH_WINDOW_MS } from '../src/lib/serverCache.js';
 import { withPower } from '../src/lib/power.js';
+import { parseBodies, categoryPart, textBody, BODY_LABELS, BODY_VALUES } from '../src/lib/bodyType.js';
 
 // Encar's Price field is in 만원 (manwon = 10,000 KRW) units, but the
 // frontend's price filter dropdowns are labeled in EUR — matches
@@ -426,7 +427,11 @@ export function staleHeaders(res, cachedAt) {
 
 export function buildEncarUrl(parts, offset, count, sortKey = 'ModifiedDate') {
   const allParts = ['SellType.일반', 'Condition.Inspection', ...parts];
-  const filter = `(And.Hidden.N._.${allParts.join('._.')}.)`;
+  // Each plain term ends in "."; a group like "(Or.Category.A._.Category.B.)"
+  // is already closed and takes no dot (Encar answers 400 if it gets one).
+  // For plain terms this produces exactly the string it always did.
+  const terms  = allParts.map(p => (p.startsWith('(') ? p : `${p}.`));
+  const filter = `(And.Hidden.N._.${terms.join('_.')})`;
   return `https://api.encar.com/search/car/list/general?${new URLSearchParams({
     count: 'true',
     q:     filter,
@@ -508,6 +513,53 @@ function matchScore(car, terms) {
 // contains the search term, then (2) re-query each discovered value as its
 // own exact Encar facet filter to get a true per-variant Count and a real
 // page of backing rows, instead of guessing from a small sample.
+// Coupé / cabrio / wagon are not Encar categories (see bodyType.js), so they
+// are found by reading the model/trim text of live rows: the newest
+// BODY_SCAN_ROWS listings matching every other filter are fetched in parallel
+// pages and kept when their text names the body. When that window does not
+// cover the whole result set, the total is extrapolated from it and flagged
+// `totalApprox` rather than presented as exact.
+const BODY_SCAN_PAGE  = 500;  // Encar's largest working page (1000 returns nothing)
+const BODY_SCAN_BATCH = 4;    // pages fetched in parallel per round
+const BODY_SCAN_MAX   = 8000; // rows; bounds one request's work for deep pages
+
+async function bodyScan(parts, texts, cats, offset, count, signal, sortKey) {
+  const first = await runSearch(parts, 0, BODY_SCAN_PAGE, signal, sortKey);
+  const limit = Math.min(first.Count, BODY_SCAN_MAX);
+  const rowsSeen = [...first.SearchResults];
+  let matches = rowsSeen.filter(c => textBody(c, texts));
+
+  // Keep reading further into the result set until the requested page is
+  // filled, so scrolling deeper keeps returning coupés instead of stopping at
+  // the end of a fixed window.
+  let next = BODY_SCAN_PAGE;
+  while (matches.length < offset + count && next < limit) {
+    const batch = [];
+    for (let i = 0; i < BODY_SCAN_BATCH && next < limit; i++, next += BODY_SCAN_PAGE) {
+      batch.push(runSearch(parts, next, BODY_SCAN_PAGE, signal, sortKey).catch(() => null));
+    }
+    for (const p of await Promise.all(batch)) if (p) rowsSeen.push(...p.SearchResults);
+    matches = rowsSeen.filter(c => textBody(c, texts));
+  }
+  const scanned = rowsSeen.length;
+
+  const exact = scanned >= first.Count;
+  let total = exact ? matches.length : Math.round(matches.length / Math.max(1, scanned) * first.Count);
+  let rows  = matches.slice(offset, offset + count);
+
+  // A category body chosen alongside (e.g. SUV + Coupé) comes from its own
+  // exact Encar query, page for page, merged without duplicates.
+  if (cats.length) {
+    const cat = await runSearch([...parts, categoryPart(cats)], offset, count, signal, sortKey);
+    const seen = new Set(rows.map(c => c.Id));
+    rows  = [...rows, ...cat.SearchResults.filter(c => !seen.has(c.Id))];
+    total += cat.Count;
+    if (sortKey === 'PriceAsc')  rows.sort((a, b) => (a.Price ?? 0) - (b.Price ?? 0));
+    if (sortKey === 'PriceDesc') rows.sort((a, b) => (b.Price ?? 0) - (a.Price ?? 0));
+  }
+  return { Count: total, SearchResults: rows, approx: !exact };
+}
+
 async function substringSearch(keyword, manufacturer, offset, count, signal, extraParts = [], sortKey = 'ModifiedDate') {
   const scanParts = [...(manufacturer ? [`Manufacturer.${manufacturer}`] : []), ...extraParts];
 
@@ -687,6 +739,28 @@ export default async function handler(req, res) {
   const priceToManwon   = q.priceTo   ? eurToManwon(q.priceTo)   : 999999;
   commonParts.push(`Price.range(${Math.max(MIN_PRICE_MANWON, priceFromManwon)}..${priceToManwon})`);
 
+  // Body type: SUV/Sedan/... are Encar categories and filter server-side like
+  // any other facet; Coupé/Cabrio/Wagon need the text scan (bodyScan). An
+  // unknown value is refused -- answering it with unfiltered cars would look
+  // like a working filter that returns the wrong body.
+  const bodies = parseBodies(q.body);
+  if (bodies.unknown.length) {
+    return res.status(400).json({
+      error: `Unknown body type: ${bodies.unknown.join(', ')}`,
+      accepted: BODY_VALUES,
+    });
+  }
+  const bodyRequested = bodies.cats.length + bodies.texts.length > 0;
+  const bodyScanMode  = bodies.texts.length > 0;
+  if (bodies.cats.length && !bodyScanMode) commonParts.push(categoryPart(bodies.cats));
+  // The body each returned car is listed as: its own coupé/cabrio/wagon text
+  // first, else the one category asked for.
+  const bodyOf = (car) => {
+    const t = textBody(car);
+    if (t) return BODY_LABELS[t];
+    return bodies.cats.length === 1 ? BODY_LABELS[bodies.cats[0]] : null;
+  };
+
   // Only a confirmed dictionary hit is trustworthy as an *exact* Model facet —
   // Encar stores everything else (series/class/code-style names) with a
   // generation-code suffix, so an exact filter on those either goes empty or
@@ -714,7 +788,7 @@ export default async function handler(req, res) {
       total:   freshCached.total,
       page,
       count:   freshCached.results.length,
-      results: freshCached.results.map(withPower),
+      results: freshCached.results.map(c => ({ ...withPower(c), bodyType: bodyOf(c) })),
     });
   }
 
@@ -734,7 +808,9 @@ export default async function handler(req, res) {
     // plain chronological order, untouched.
     const isPlainBrowse = sortKey === 'ModifiedDate' && identityParts.length === 0 && !rawKeyword;
     let data;
-    if (isPlainBrowse && offset === 0) {
+    if (bodyScanMode) {
+      data = await bodyScan([...identityParts, ...commonParts], bodies.texts, bodies.cats, offset, count, ctrl.signal, sortKey);
+    } else if (isPlainBrowse && offset === 0) {
       const pool = await runSearch(commonParts, 0, FEATURED_POOL_SIZE, ctrl.signal, sortKey);
       const featured = pool.SearchResults
         .map((car, i) => ({ car, i, s: qualityScore(car) }))
@@ -751,7 +827,7 @@ export default async function handler(req, res) {
     // A non-exact model was left out of the facet filter above — narrow the
     // (brand-wide) results down by substring-matching it now, rather than
     // waiting for a hard zero-result before trying.
-    if (model && !modelExact) {
+    if (!bodyScanMode && model && !modelExact) {
       const narrowed = await substringSearch(remainder, manufacturer, offset, count, ctrl.signal, commonParts, sortKey);
       if (narrowed.SearchResults.length > 0) data = narrowed;
     }
@@ -765,7 +841,9 @@ export default async function handler(req, res) {
     //      everything for the typed text.
     //   4. Truly nothing matched anywhere → show recent listings rather than
     //      a hard empty state.
-    if (data.SearchResults.length === 0 && (manufacturer || model)) {
+    // Never for a coupé/cabrio/wagon search: broadening would hand back cars
+    // of some other body as if they matched.
+    if (!bodyScanMode && data.SearchResults.length === 0 && (manufacturer || model)) {
       if (manufacturer && remainder) {
         data = await substringSearch(remainder, manufacturer, offset, count, ctrl.signal, commonParts, sortKey);
       }
@@ -802,9 +880,10 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       total:   data.Count,
+      ...(data.approx ? { totalApprox: true } : {}),
       page,
       count:   results.length,
-      results: results.map(withPower),
+      results: results.map(c => ({ ...withPower(c), bodyType: bodyOf(c) })),
       ...(req.liveOnly ? { live: true, fetchedAt } : {}),
     });
 
@@ -875,7 +954,8 @@ export default async function handler(req, res) {
     // make, filtered in-process for whatever else the caller asked that can be
     // evaluated here (year and price live on the car objects). Only the
     // manufacturer is required to match; anything unmatched simply narrows.
-    if (q.manufacturer) {
+    // Not for a body search: the brand cache holds every body type.
+    if (q.manufacturer && !bodyRequested) {
       const brandKey = cacheKeyFromQuery('autovg:cache:cars', {
         page: '0', count: '200', yearFrom: '2016', manufacturer: q.manufacturer,
       });
