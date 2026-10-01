@@ -74,7 +74,10 @@ export async function issueFreeKeyForEmail(rawEmail) {
   if (count != null && count > DAILY_ISSUE_CAP) return { ok: false, reason: 'cap_reached' };
 
   const key  = generateFreeKey();
-  const meta = JSON.stringify({ email, createdAt: Date.now() });
+  // liveOnly: a trial key is how a prospective client judges the data, so it
+  // is never answered from the server cache -- live Encar data or an error.
+  // Keys issued before this flag existed keep their old behaviour.
+  const meta = JSON.stringify({ email, createdAt: Date.now(), liveOnly: true });
   await pipe([
     ['SET', `autovg:freekey:valid:${key}`, meta],
     ['SET', `autovg:freekey:byemail:${email}`, key],
@@ -88,9 +91,18 @@ export async function issueFreeKeyForEmail(rawEmail) {
  * Used by rateLimit.js after the static env-var keys don't match.
  */
 export async function freeKeyLabel(key) {
+  return (await freeKeyRecord(key))?.label ?? null;
+}
+
+/** Like freeKeyLabel, plus whether the key must only ever see live data. */
+export async function freeKeyRecord(key) {
   if (!key) return null;
   const arr = await pipe([['GET', `autovg:freekey:valid:${key}`]]);
   if (!arr || !arr[0]) return null;
-  try { return JSON.parse(arr[0]).email || 'freekey'; }
-  catch { return 'freekey'; }
+  try {
+    const meta = JSON.parse(arr[0]);
+    return { label: meta.email || 'freekey', liveOnly: meta.liveOnly === true };
+  } catch {
+    return { label: 'freekey', liveOnly: false };
+  }
 }

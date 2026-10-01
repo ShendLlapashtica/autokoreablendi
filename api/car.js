@@ -1,5 +1,6 @@
 // Single car detail — tries Encar view endpoint, falls back to list search
 import { checkApiKey } from '../src/lib/rateLimit.js';
+import { withPower } from '../src/lib/power.js';
 const BROWSER_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   'Accept': 'application/json, text/javascript, */*; q=0.01',
@@ -99,7 +100,7 @@ export default async function handler(req, res) {
     } catch {}
 
     clearTimeout(timer);
-    return res.status(200).json(data);
+    return res.status(200).json(withPower(data));
   } catch (err) {
     clearTimeout(timer);
     // Same recovery the listing uses: when every server route to Encar is

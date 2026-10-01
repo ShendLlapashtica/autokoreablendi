@@ -11,6 +11,7 @@ import dns from 'node:dns';
 dns.setDefaultResultOrder('ipv4first');
 
 import { cacheGet, cacheSet, cacheKeyFromQuery, FRESH_WINDOW_MS } from '../src/lib/serverCache.js';
+import { withPower } from '../src/lib/power.js';
 
 // Encar's Price field is in 만원 (manwon = 10,000 KRW) units, but the
 // frontend's price filter dropdowns are labeled in EUR — matches
@@ -705,18 +706,22 @@ export default async function handler(req, res) {
   // Cache-first: a query answered in the last FRESH_WINDOW_MS is served
   // straight from Redis, no live Encar/proxy attempt at all. See
   // serverCache.js for why.
-  const freshCached = await cacheGet(cacheKey);
+  // A live-only key (a trial key, see freeKeys.js) never touches the cache:
+  // every answer is fetched from Encar for this request, or the request fails.
+  const freshCached = req.liveOnly ? null : await cacheGet(cacheKey);
   if (freshCached && Date.now() - freshCached.ts < FRESH_WINDOW_MS) {
     return res.status(200).json({
       total:   freshCached.total,
       page,
       count:   freshCached.results.length,
-      results: freshCached.results,
+      results: freshCached.results.map(withPower),
     });
   }
 
   const ctrl  = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 3000);
+  // A live-only key has no cache to fall back on, so it gets most of the
+  // function's 10s budget to reach Encar instead of the visitor's 3s.
+  const timer = setTimeout(() => ctrl.abort(), req.liveOnly ? 8000 : 3000);
 
   try {
     // Plain unfiltered homepage browsing — no brand/model/keyword narrowing
@@ -788,11 +793,19 @@ export default async function handler(req, res) {
     // Best-effort — never let a cache-write failure affect the live response.
     if (results.length > 0) await cacheSet(cacheKey, { total: data.Count, results });
 
+    const fetchedAt = new Date().toISOString();
+    if (req.liveOnly) {
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('X-Data-Live', 'true');
+      res.setHeader('X-Data-Fetched-At', fetchedAt);
+    }
+
     return res.status(200).json({
       total:   data.Count,
       page,
       count:   results.length,
-      results,
+      results: results.map(withPower),
+      ...(req.liveOnly ? { live: true, fetchedAt } : {}),
     });
 
   } catch (err) {
@@ -801,6 +814,17 @@ export default async function handler(req, res) {
     const detail    = err instanceof AggregateError
       ? err.errors.map(e => e.message).join(' | ')
       : err.message;
+
+    // Live-only key: no cached, stale or unfiltered substitute, ever.
+    if (req.liveOnly) {
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('Retry-After', '30');
+      return res.status(503).json({
+        error: 'Live data is momentarily unavailable. Retry shortly.',
+        code:  'LIVE_UNAVAILABLE',
+        live:  false,
+      });
+    }
 
     // Live fetch (direct + every proxy) failed — serve the last-known-good
     // response for this exact query, if any visitor has ever gotten one,
@@ -824,7 +848,7 @@ export default async function handler(req, res) {
         total:    cached.total,
         page,
         count:    cached.results.length,
-        results:  cached.results,
+        results:  cached.results.map(withPower),
         stale:    true,
         cachedAt: cached.ts,
         filtersApplied: true,
@@ -884,7 +908,7 @@ export default async function handler(req, res) {
               total:    matched.length,
               page,
               count:    sliced.length,
-              results:  sliced,
+              results:  sliced.map(withPower),
               stale:    true,
               cachedAt: brand.ts,
               filtersApplied: true,
@@ -947,7 +971,7 @@ export default async function handler(req, res) {
         total:    fallback.total,
         page,
         count:    sliced.length,
-        results:  sliced,
+        results:  sliced.map(withPower),
         stale:    true,
         cachedAt: fallback.ts,
         filtersApplied: false,

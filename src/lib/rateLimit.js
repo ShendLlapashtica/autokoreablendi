@@ -23,7 +23,7 @@
 //              req.paidMaxCount (blank = site-wide default of 500)
 
 import { timingSafeEqual } from 'crypto';
-import { freeKeyLabel } from './freeKeys.js';
+import { freeKeyRecord } from './freeKeys.js';
 
 const DAILY_LIMIT = 100;
 
@@ -246,8 +246,12 @@ export async function checkApiKey(req, res) {
   // known list; the token's own secrecy is the protection. Labeled by owner
   // email so each auto-issued key gets its own independent daily quota below.
   if (!label) {
-    const email = await freeKeyLabel(key);
-    if (email) label = `dyn:${email}`;
+    const rec = await freeKeyRecord(key);
+    if (rec) {
+      label = `dyn:${rec.label}`;
+      // Read by api/cars.js: never serve this key from the server cache.
+      if (rec.liveOnly) req.liveOnly = true;
+    }
   }
 
   if (!label) {
