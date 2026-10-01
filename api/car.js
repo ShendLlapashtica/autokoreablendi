@@ -1,6 +1,7 @@
 // Single car detail — tries Encar view endpoint, falls back to list search
 import { checkApiKey } from '../src/lib/rateLimit.js';
 import { withPower } from '../src/lib/power.js';
+import { noisyFields, majorityMerge } from '../src/lib/encarClean.js';
 const BROWSER_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   'Accept': 'application/json, text/javascript, */*; q=0.01',
@@ -80,6 +81,23 @@ export default async function handler(req, res) {
         return car;
       }),
     ]);
+
+    // Live-only key: Encar sometimes injects random characters into text
+    // fields (see encarClean.js). A noisy record is fetched again; if it stays
+    // noisy, each field is settled by majority across three fetches.
+    if (req.liveOnly && noisyFields(data).length) {
+      const again = () => Promise.any([
+        tryFetch(listUrl, ctrl.signal),
+        tryFetch(`${DENO_RELAY}?url=${enc2}`, ctrl.signal, false, DENO_RELAY_HEADERS),
+      ]).then(d => d?.SearchResults?.[0] ?? null).catch(() => null);
+      const second = await again();
+      if (second && !noisyFields(second).length) Object.assign(data, second);
+      else {
+        const third = await again();
+        const merged = majorityMerge([data, second, third].filter(Boolean).map(c => ({ SearchResults: [c] })));
+        Object.assign(data, merged.SearchResults[0]);
+      }
+    }
 
     // Best-effort: the view/list endpoints above only carry a handful of
     // photos each. Encar's readside API exposes the full gallery (often

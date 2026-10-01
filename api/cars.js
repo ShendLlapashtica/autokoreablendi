@@ -2,6 +2,9 @@
 // Supports full pagination over 200k+ listings
 import { checkApiKey } from '../src/lib/rateLimit.js';
 import dns from 'node:dns';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { noisyRows, majorityMerge } from '../src/lib/encarClean.js';
+import { modelGroupsFrom, modelsFrom, matchGroup, matchModel } from '../src/lib/modelResolve.js';
 // Encar's egress failure on Vercel is a 17ms "fetch failed" -- far too fast
 // for a round trip to Korea and far too fast for a WAF page, which would be
 // an HTTP response, not a dead socket. That signature is what a dual-stack
@@ -211,6 +214,19 @@ const COLOR_MAP = {
 };
 
 // Case-insensitive dictionary lookup — returns the matched dictionary key, or null.
+// "bmw x5" -> { make: 'BMW', rest: 'x5' }; the make is the longest leading
+// run of words (up to three) that names one.
+function splitMake(text) {
+  const words = String(text).trim().split(/\s+/);
+  for (let len = Math.min(3, words.length); len >= 1; len--) {
+    const cand = words.slice(0, len).join(' ');
+    const key = findKey(MANUFACTURER_REVERSE, cand);
+    const make = key ? MANUFACTURER_REVERSE[key] : (Object.values(MANUFACTURER_REVERSE).includes(cand) ? cand : null);
+    if (make) return { make, rest: words.slice(len).join(' ') };
+  }
+  return { make: null, rest: String(text).trim() };
+}
+
 function findKey(dict, val) {
   if (Object.prototype.hasOwnProperty.call(dict, val)) return val;
   return Object.keys(dict).find(k => k.toLowerCase() === val.toLowerCase()) || null;
@@ -440,7 +456,84 @@ export function buildEncarUrl(parts, offset, count, sortKey = 'ModifiedDate') {
   })}`;
 }
 
-async function runSearch(parts, offset, count, signal, sortKey = 'ModifiedDate') {
+// Live-only (trial) keys get every Encar response checked for Encar's
+// injected-character noise (see encarClean.js): a noisy page is fetched
+// again, and if it stays noisy each field is settled by majority across three
+// fetches. Scoped with AsyncLocalStorage so every search inside that request
+// -- body scans and facet reads included -- is covered, and no other caller
+// pays the extra fetches.
+const liveStore = new AsyncLocalStorage();
+
+async function runSearch(...args) {
+  if (!liveStore.getStore()?.clean) return rawSearch(...args);
+  const first = await rawSearch(...args);
+  if (!noisyRows(first.SearchResults).length) return first;
+  const second = await rawSearch(...args).catch(() => null);
+  if (second && !noisyRows(second.SearchResults).length) return second;
+  const third = await rawSearch(...args).catch(() => null);
+  return majorityMerge([first, second, third].filter(Boolean));
+}
+
+// Encar's model list per make, read from its facet tree. Model names change
+// only when Encar adds a model, so this is kept per instance for six hours;
+// listings themselves are never cached for a live-only key.
+const groupCache = new Map();   // make -> { at, groups }
+const modelCache = new Map();   // make|group -> { at, models }
+const META_TTL_MS = 6 * 60 * 60 * 1000;
+
+async function modelGroupsOf(make, signal) {
+  const hit = groupCache.get(make);
+  if (hit && Date.now() - hit.at < META_TTL_MS) return hit.groups;
+  // Domestic makes sit under CarType.Y, imports under CarType.N; ask both.
+  const trees = await Promise.all(['Y', 'N'].map(t =>
+    rawSearch([`(C.CarType.${t}._.Manufacturer.${make}.)`], 0, 1, signal).catch(() => null)));
+  const groups = trees.flatMap(d => modelGroupsFrom(d?.iNav));
+  if (groups.length) groupCache.set(make, { at: Date.now(), groups });
+  return groups;
+}
+
+async function modelsOf(make, group, signal) {
+  const key = `${make}|${group}`;
+  const hit = modelCache.get(key);
+  if (hit && Date.now() - hit.at < META_TTL_MS) return hit.models;
+  const d = await rawSearch([`(C.Manufacturer.${make}._.ModelGroup.${group}.)`], 0, 1, signal).catch(() => null);
+  const models = modelsFrom(d?.iNav);
+  if (models.length) modelCache.set(key, { at: Date.now(), models });
+  return models;
+}
+
+// The makes a model name is looked up in when the caller gives none.
+const LOOKUP_MAKES = ['현대', '기아', '제네시스', '벤츠', 'BMW', '아우디', '폭스바겐', '포르쉐',
+  '볼보', '미니', '랜드로버', '테슬라', '렉서스', '쉐보레(GM대우)', '르노코리아(삼성)', 'KG모빌리티(쌍용)'];
+
+/**
+ * Resolves the requested model for a live-only key onto exact Encar filter
+ * parts, or explains why it cannot. Returns { make, parts } on a match,
+ * { unknown: true, known } when the make has no such model.
+ */
+async function resolveModel(make, text, signal) {
+  const makes = make ? [make] : LOOKUP_MAKES;
+  const lists = await Promise.all(makes.map(async m => ({ make: m, groups: await modelGroupsOf(m, signal) })));
+  let found = null;
+  for (const { make: m, groups } of lists) {
+    const hit = matchGroup(groups, text);
+    if (hit && (!found || hit.group.value.length > found.hit.group.value.length)) found = { make: m, hit };
+  }
+  if (!found) {
+    const known = make ? (lists[0].groups || []).map(g => g.eng || g.value) : [];
+    return { unknown: true, known };
+  }
+  const parts = [`Manufacturer.${found.make}`, `ModelGroup.${found.hit.group.value}`];
+  let generation = null;
+  if (found.hit.rest) {
+    generation = matchModel(await modelsOf(found.make, found.hit.group.value, signal), found.hit.group.value, found.hit.rest);
+    if (!generation) return { unknown: true, known: await modelsOf(found.make, found.hit.group.value, signal) };
+    parts.push(`Model.${generation}`);
+  }
+  return { make: found.make, parts, modelGroup: found.hit.group.value, model: generation };
+}
+
+async function rawSearch(parts, offset, count, signal, sortKey = 'ModifiedDate') {
   const encarUrl = buildEncarUrl(parts, offset, count, sortKey);
   const enc = encodeURIComponent(encarUrl);
 
@@ -656,7 +749,16 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  if (!await checkApiKey(req, res)) return;
+  if (!req.keyChecked) {
+    if (!await checkApiKey(req, res)) return;
+    req.keyChecked = true;
+  }
+  // A live-only key runs the rest of the request with noise checking on
+  // (see runSearch). Re-entering skips the key check above, so it is
+  // counted once.
+  if (req.liveOnly && !liveStore.getStore()) {
+    return liveStore.run({ clean: true }, () => handler(req, res));
+  }
 
   const q = req.query;
 
@@ -694,7 +796,41 @@ export default async function handler(req, res) {
     }
   }
 
-  const sortKey = q.sort === 'priceAsc' ? 'PriceAsc' : q.sort === 'priceDesc' ? 'PriceDesc' : 'ModifiedDate';
+  // Live-only key: the model -- model=, modelGroup=, or the words after the
+  // make in q= -- is resolved against Encar's live model list onto exact
+  // ModelGroup/Model filters. No match means no cars, never the whole make.
+  let liveModel = null;
+  if (req.liveOnly) {
+    let make = q.manufacturer ? toEncarManufacturer(q.manufacturer) : null;
+    let text = (q.modelGroup || q.model || '').trim();
+    if (!text && rawKeyword) {
+      const split = splitMake(rawKeyword);
+      make = make || split.make;
+      text = split.rest;
+      if (!text) { manufacturer = make; model = null; remainder = null; }
+    }
+    if (text) {
+      const r = await resolveModel(make, text, AbortSignal.timeout(6000)).catch(() => null);
+      if (!r) {
+        res.setHeader('Retry-After', '30');
+        return res.status(503).json({ error: 'Live data is momentarily unavailable. Retry shortly.', code: 'LIVE_UNAVAILABLE', live: false });
+      }
+      if (r.unknown) {
+        const fetchedAt = new Date().toISOString();
+        res.setHeader('Cache-Control', 'no-store');
+        return res.status(200).json({
+          total: 0, page, count: 0, results: [], live: true, fetchedAt,
+          modelMatched: false,
+          notice: `No Encar model matches "${text}"${make ? ' for this make' : ''}.`,
+          knownModels: r.known,
+        });
+      }
+      liveModel = r;
+      manufacturer = r.make; model = null; remainder = null; modelExact = false;
+    }
+  }
+
+  const sortKey =q.sort === 'priceAsc' ? 'PriceAsc' : q.sort === 'priceDesc' ? 'PriceDesc' : 'ModifiedDate';
 
   // Filters shared by every attempt (fuel/year/mileage/price/transmission/color)
   const commonParts = [];
@@ -767,8 +903,11 @@ export default async function handler(req, res) {
   // (worse) returns a small, misleadingly "successful" sliver of real matches
   // (e.g. only the one Audi listing literally tagged "A4" with no suffix).
   const identityParts = [];
-  if (manufacturer) identityParts.push(`Manufacturer.${manufacturer}`);
-  if (model && modelExact) identityParts.push(`Model.${model}`);
+  if (liveModel) identityParts.push(...liveModel.parts);
+  else {
+    if (manufacturer) identityParts.push(`Manufacturer.${manufacturer}`);
+    if (model && modelExact) identityParts.push(`Model.${model}`);
+  }
 
   // A blocked `direct` attempt hangs rather than fails fast (confirmed live:
   // ~10s round trips from prod), so this timeout is the real ceiling on
@@ -843,7 +982,8 @@ export default async function handler(req, res) {
     //      a hard empty state.
     // Never for a coupé/cabrio/wagon search: broadening would hand back cars
     // of some other body as if they matched.
-    if (!bodyScanMode && data.SearchResults.length === 0 && (manufacturer || model)) {
+    // Nor for a resolved model: zero of that model is the answer, not the make.
+    if (!bodyScanMode && !liveModel && data.SearchResults.length === 0 && (manufacturer || model)) {
       if (manufacturer && remainder) {
         data = await substringSearch(remainder, manufacturer, offset, count, ctrl.signal, commonParts, sortKey);
       }
@@ -885,6 +1025,7 @@ export default async function handler(req, res) {
       count:   results.length,
       results: results.map(c => ({ ...withPower(c), bodyType: bodyOf(c) })),
       ...(req.liveOnly ? { live: true, fetchedAt } : {}),
+      ...(liveModel ? { modelMatched: true, resolved: { manufacturer: liveModel.make, modelGroup: liveModel.modelGroup, model: liveModel.model } } : {}),
     });
 
   } catch (err) {
