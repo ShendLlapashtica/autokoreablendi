@@ -98,3 +98,73 @@ export async function recentDropIds(sinceMs, limit = 1000) {
   const ids = got?.[0];
   return Array.isArray(ids) ? ids.map(Number).filter(Number.isFinite) : null;
 }
+
+// ── Baseline from the search cache ────────────────────────────────────────
+//
+// Tracking can only see a drop once it knows an earlier price. The site's
+// search cache (serverCache.js, kept 14 days) already holds earlier prices:
+// every cached search result carries each car's Price at the time it was
+// cached. Seeding the baseline from it once means drops from the last two
+// weeks are found on the first checks instead of only from today on.
+//
+//   autovg:pxseed:v1     -> number of cars seeded (set when done)
+//   autovg:pxseed:queue  -> list of seeded car ids still to re-check live
+
+const SEED_DONE  = 'autovg:pxseed:v1';
+const SEED_QUEUE = 'autovg:pxseed:queue';
+const SEED_LOCK  = 'autovg:pxseed:lock';
+
+export async function seedFromCache() {
+  const [done, lock] = (await pipe([['GET', SEED_DONE], ['SET', SEED_LOCK, '1', 'NX', 'EX', '300']])) || [];
+  if (done || lock !== 'OK') return;
+
+  // Every cached search result key.
+  const keys = [];
+  let cursor = '0';
+  for (let i = 0; i < 50; i++) {
+    const got = await pipe([['SCAN', cursor, 'MATCH', 'autovg:cache:cars*', 'COUNT', '1000']]);
+    const res = got?.[0];
+    if (!Array.isArray(res)) break;
+    cursor = String(res[0]);
+    keys.push(...(res[1] || []));
+    if (cursor === '0') break;
+  }
+
+  // The oldest price seen for each car across those results.
+  const oldest = new Map();
+  for (let i = 0; i < keys.length; i += 20) {
+    const vals = (await pipe([['MGET', ...keys.slice(i, i + 20)]]))?.[0] || [];
+    for (const raw of vals) {
+      let entry; try { entry = JSON.parse(raw); } catch { continue; }
+      for (const c of entry?.results || []) {
+        const p = Number(c?.Price);
+        if (c?.Id == null || !Number.isFinite(p)) continue;
+        const prev = oldest.get(c.Id);
+        if (!prev || entry.ts < prev.ts) oldest.set(c.Id, { p, ts: entry.ts });
+      }
+    }
+  }
+
+  const ids = [...oldest.keys()];
+  for (let i = 0; i < ids.length; i += 1000) {
+    const slice = ids.slice(i, i + 1000);
+    await pipe([
+      ['MSET', ...slice.flatMap(id => [`autovg:px:${id}`, String(oldest.get(id).p)])],
+      ['RPUSH', SEED_QUEUE, ...slice.map(String)],
+    ]);
+  }
+  await pipe([['SET', SEED_DONE, String(ids.length)], ['DEL', SEED_LOCK]]);
+}
+
+/** Up to n seeded ids still waiting for their live re-check. */
+export async function nextSeedIds(n) {
+  const got = await pipe([['LPOP', SEED_QUEUE, String(n)]]);
+  const ids = got?.[0];
+  return Array.isArray(ids) ? ids.map(Number).filter(Number.isFinite) : [];
+}
+
+/** How many seeded ids are still waiting. */
+export async function seedRemaining() {
+  const got = await pipe([['LLEN', SEED_QUEUE]]);
+  return Number(got?.[0]) || 0;
+}

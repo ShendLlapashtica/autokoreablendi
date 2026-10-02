@@ -5,7 +5,7 @@ import dns from 'node:dns';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { noisyRows, majorityMerge } from '../src/lib/encarClean.js';
 import { modelGroupsFrom, modelsFrom, matchGroup, matchModel } from '../src/lib/modelResolve.js';
-import { trackPrices, recentDropIds } from '../src/lib/priceTrack.js';
+import { trackPrices, recentDropIds, seedFromCache, nextSeedIds, seedRemaining } from '../src/lib/priceTrack.js';
 // Encar's egress failure on Vercel is a 17ms "fetch failed" -- far too fast
 // for a round trip to Korea and far too fast for a WAF page, which would be
 // an HTTP response, not a dead socket. That signature is what a dual-stack
@@ -640,9 +640,18 @@ async function newestFeed(parts, { sinceId, hours }, offset, count, signal) {
  * shows up, so new drops are caught as they happen.
  */
 async function priceDropFeed(parts, days, offset, count, signal) {
+  // Earlier prices from the search cache (once), then the next block of
+  // those cars re-read live: a car now cheaper than it was cached is a drop.
+  await seedFromCache().catch(() => {});
+  const seedIds = await nextSeedIds(1600).catch(() => []);
+  const seedBlocks = [];
+  for (let i = 0; i < seedIds.length; i += ID_CHUNK) seedBlocks.push(seedIds.slice(i, i + ID_CHUNK));
   // Swept with the caller's own filters, so it watches the cars they asked about.
-  const sweep = await Promise.all([0, 500, 1000, 1500].map(o => runSearch(parts, o, 500, signal).catch(() => null)));
-  await trackPrices(sweep.filter(Boolean).flatMap(d => d.SearchResults));
+  const [sweep, seeded] = await Promise.all([
+    Promise.all([0, 500, 1000, 1500].map(o => runSearch(parts, o, 500, signal).catch(() => null))),
+    Promise.all(seedBlocks.map(b => runSearch([`(Or.${b.map(i => `CarId.${i}.`).join('_.')})`], 0, ID_CHUNK, signal).catch(() => null))),
+  ]);
+  await trackPrices([...sweep, ...seeded].filter(Boolean).flatMap(d => d.SearchResults));
   const ids = await recentDropIds(Date.now() - days * 86400e3);
   if (ids === null) throw new Error('price tracking unavailable');
   const chunks = [];
