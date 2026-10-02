@@ -118,9 +118,27 @@ export default async function handler(req, res) {
     } catch {}
 
     clearTimeout(timer);
+    // A live-only key gets the same live markers as /api/cars: fetched from
+    // Encar for this request, never cached on the way.
+    if (req.liveOnly) {
+      const fetchedAt = new Date().toISOString();
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('X-Data-Live', 'true');
+      res.setHeader('X-Data-Fetched-At', fetchedAt);
+      return res.status(200).json({ ...withPower(data), live: true, fetchedAt });
+    }
     return res.status(200).json(withPower(data));
   } catch (err) {
     clearTimeout(timer);
+    if (req.liveOnly) {
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('Retry-After', '30');
+      return res.status(503).json({
+        error: 'Live data is momentarily unavailable. Retry shortly.',
+        code:  'LIVE_UNAVAILABLE',
+        live:  false,
+      });
+    }
     // Same recovery the listing uses: when every server route to Encar is
     // blocked, hand the browser the URL we could not reach. A visitor's IP is
     // not on Encar's blocklist. Without this a SHARED LINK to a car opens on
