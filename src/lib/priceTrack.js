@@ -93,7 +93,7 @@ export async function trackPrices(rows) {
 }
 
 /** Ids of cars whose price dropped within the window, newest drop first. */
-export async function recentDropIds(sinceMs, limit = 1000) {
+export async function recentDropIds(sinceMs, limit = 5000) {
   const got = await pipe([['ZRANGE', 'autovg:pxdrops', '+inf', String(sinceMs), 'BYSCORE', 'REV', 'LIMIT', '0', String(limit)]]);
   const ids = got?.[0];
   return Array.isArray(ids) ? ids.map(Number).filter(Number.isFinite) : null;
