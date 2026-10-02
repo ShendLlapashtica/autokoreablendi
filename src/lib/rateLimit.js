@@ -45,6 +45,23 @@ const PAID_DAILY_LIMIT = 200000;
 // working exactly as before — nothing has to be re-issued).
 const SUSPENDED_PAID_LABELS = new Set(['partner1']);
 
+// Self-issued (free) keys upgraded to the paid plan: the same key keeps
+// working, without the 100/day free quota, under a per-minute cap.
+// Configured in the environment, never in code (this repo is public and
+// the list names customers):  UPGRADED_FREE_KEYS = "owner-email:rpm,..."
+// Upgrade = add the entry and redeploy; downgrade = remove it.
+function loadUpgradedFreeKeys() {
+  const out = new Map();
+  for (const entry of (process.env.UPGRADED_FREE_KEYS || '').split(',')) {
+    const i = entry.lastIndexOf(':');
+    if (i <= 0) continue;
+    const email = entry.slice(0, i).trim().toLowerCase();
+    const rpm = parseInt(entry.slice(i + 1), 10);
+    if (email && Number.isFinite(rpm) && rpm > 0) out.set(email, { rpm });
+  }
+  return out;
+}
+
 // Generous per-IP cap on anonymous (no-key) traffic — high enough that a
 // real visitor browsing/filtering/paginating the site never gets near it,
 // but bounds how hard any single script can hammer the proxy (and, in
@@ -268,6 +285,22 @@ export async function checkApiKey(req, res) {
   if (!label) {
     res.status(401).json({ error: 'Invalid API key.' });
     return false;
+  }
+
+  // Upgraded self-issued key: no daily quota, a per-minute cap instead.
+  const upgraded = label.startsWith('dyn:') ? loadUpgradedFreeKeys().get(label.slice(4).toLowerCase()) : null;
+  if (upgraded) {
+    const minuteBucket = Math.floor(Date.now() / 60000);
+    const used = await redisIncr(`autovg:up:rpm:${label}:${minuteBucket}`, 60);
+    if (used !== null) {
+      res.setHeader('X-RateLimit-Limit-Minute', String(upgraded.rpm));
+      res.setHeader('X-RateLimit-Remaining-Minute', String(Math.max(0, upgraded.rpm - used)));
+      if (used > upgraded.rpm) {
+        res.status(429).json({ error: 'Too many requests, slow down.', limit: upgraded.rpm, per: 'minute' });
+        return false;
+      }
+    }
+    return true;
   }
 
   // Valid key — check this person's own daily quota

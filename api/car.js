@@ -4,6 +4,7 @@ import { withPower } from '../src/lib/power.js';
 import { noisyFields, majorityMerge } from '../src/lib/encarClean.js';
 import { trackPrices } from '../src/lib/priceTrack.js';
 import { ENCAR_OPTIONS } from '../src/lib/encarOptions.js';
+import { OPTION_NAMES_DE_EN } from '../src/lib/encarOptionNames.js';
 const BROWSER_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   'Accept': 'application/json, text/javascript, */*; q=0.01',
@@ -80,7 +81,12 @@ async function addDetails(data, full, signal) {
   const sz = full?.condition?.seizing;
   if (sz) data.liens = { seizures: sz.seizingCount ?? 0, pledges: sz.pledgeCount ?? 0 };
   const codes = [...new Set([...(full?.options?.standard || []), ...(full?.options?.choice || [])])];
-  data.options = codes.map(code => ({ code, name: names.get(code) ?? null }));
+  data.options = codes.map(code => ({
+    code,
+    name: names.get(code) ?? null,               // Encar's own (Korean)
+    nameDe: OPTION_NAMES_DE_EN[code]?.[0] ?? null,
+    nameEn: OPTION_NAMES_DE_EN[code]?.[1] ?? null,
+  }));
   if (record && typeof record === 'object' && 'myAccidentCnt' in record) {
     data.history = {
       ownAccidents: record.myAccidentCnt ?? 0,
