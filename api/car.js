@@ -37,16 +37,17 @@ async function optionCatalogue(signal) {
   return optionNames ?? bundled;
 }
 
-// The relay forwards /v1/readside/vehicle/ only, so the inspection and
-// insurance-record paths also try the public proxies.
+// Inspection and insurance record: direct or via the relay, capped at 2.5s
+// so they never hold the response up. The relay must allow these paths
+// (/v1/readside/inspection/, /v1/readside/record/); until it does they are
+// simply absent from the response. The public proxies were tried and never
+// delivered the record, while costing ~6s.
 async function readsideJson(path, signal) {
   const url = `https://api.encar.com/v1/readside/${path}`;
-  const enc = encodeURIComponent(url);
+  const capped = AbortSignal.any([signal, AbortSignal.timeout(2500)]);
   return Promise.any([
-    tryFetch(url, signal),
-    tryFetch(`${DENO_RELAY}?url=${enc}`, signal, false, DENO_RELAY_HEADERS),
-    tryFetch(`https://api.cors.lol/?url=${enc}`, signal, false, {}),
-    tryFetch(`https://api.codetabs.com/v1/proxy?quest=${enc}`, signal, false, {}),
+    tryFetch(url, capped),
+    tryFetch(`${DENO_RELAY}?url=${encodeURIComponent(url)}`, capped, false, DENO_RELAY_HEADERS),
   ]);
 }
 
