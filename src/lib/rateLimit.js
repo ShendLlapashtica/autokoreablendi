@@ -175,7 +175,14 @@ async function redisIncr(key, ttlSeconds = 86400) {
  * trips the generous per-IP cap below — real visitors never notice it.
  */
 export async function checkApiKey(req, res) {
-  const key = (req.headers['x-api-key'] || '').trim();
+  // The key is accepted the three ways API clients commonly send one. Only
+  // the x-api-key header used to count, so a client sending
+  // "Authorization: Bearer <key>" or "?key=" was silently treated as an
+  // anonymous site visitor: no error, just the storefront's behaviour.
+  const bearer = String(req.headers['authorization'] || '').match(/^Bearer\s+(\S+)/i)?.[1];
+  const key = String(
+    req.headers['x-api-key'] || bearer || req.query?.key || req.query?.apiKey || req.query?.api_key || ''
+  ).trim();
 
   if (!key) {
     const bucket = Math.floor(Date.now() / 60000); // rolling 1-minute window
