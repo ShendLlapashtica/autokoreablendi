@@ -12,6 +12,7 @@
 // hand the way this incident had to be diagnosed.
 import { cacheGet, cacheKeyFromQuery } from '../src/lib/serverCache.js';
 import { buildEncarUrl } from './cars.js';
+import { proxyConfigured, proxyFetch } from '../src/lib/encarProxy.js';
 
 const BROWSER_HEADERS = {
   'User-Agent':
@@ -91,10 +92,28 @@ export default async function handler(req, res) {
       ? 'DEGRADED — server cannot reach Encar; cache is recent; site live via browser recovery'
       : 'STALE — server cannot reach Encar and the cache is old; API consumers are receiving outdated listings';
 
+  // The residential proxy route (encarProxy.js), checked on its own so a
+  // working fallback is visible even while the main route is fine.
+  let proxy = { configured: proxyConfigured };
+  if (proxyConfigured) {
+    const t = Date.now();
+    try {
+      const r = await proxyFetch(buildEncarUrl([], 0, 1), {
+        signal: AbortSignal.timeout(8000),
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/125.0', Referer: 'https://www.encar.com/', Origin: 'https://www.encar.com' },
+      });
+      const j = await r.json().catch(() => null);
+      proxy = { configured: true, reachable: r.ok && Array.isArray(j?.SearchResults), status: r.status, ms: Date.now() - t, liveCount: j?.Count ?? null };
+    } catch (e) {
+      proxy = { configured: true, reachable: false, ms: Date.now() - t, error: String(e?.cause?.code || e?.message || e) };
+    }
+  }
+
   res.status(200).json({
     verdict,
     checkedAt: new Date().toISOString(),
     serverEgressToEncar: egress,
+    residentialProxy: proxy,
     hostProbes,
     serverCache: {
       cachedAt: cached?.ts ? new Date(cached.ts).toISOString() : null,

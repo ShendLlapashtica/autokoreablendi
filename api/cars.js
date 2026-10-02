@@ -5,6 +5,7 @@ import dns from 'node:dns';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { noisyRows, majorityMerge } from '../src/lib/encarClean.js';
 import { modelGroupsFrom, modelsFrom, manufacturersFrom, matchGroup, matchModel } from '../src/lib/modelResolve.js';
+import { proxyFetch, withProxyFallback } from '../src/lib/encarProxy.js';
 import { trackPrices, recentDropIds, seedFromCache, nextSeedIds, seedRemaining } from '../src/lib/priceTrack.js';
 // Encar's egress failure on Vercel is a 17ms "fetch failed" -- far too fast
 // for a round trip to Korea and far too fast for a WAF page, which would be
@@ -304,10 +305,10 @@ function parseKeyword(keyword) {
   return { model: toEncarModel(keyword.trim()), remainder: keyword.trim(), modelExact: isExactEncarModel(keyword.trim()) };
 }
 
-async function attempt(fetchUrl, isWrapped, signal, label, extraHeaders = {}) {
+async function attempt(fetchUrl, isWrapped, signal, label, extraHeaders = {}, fetchImpl = fetch) {
   let r;
   try {
-    r = await fetch(fetchUrl, { signal, headers: extraHeaders });
+    r = await fetchImpl(fetchUrl, { signal, headers: extraHeaders });
   } catch (err) {
     // Node collapses every transport-layer failure into the bare string
     // "fetch failed" and hides the actual reason on err.cause. Unlabelled and
@@ -559,18 +560,18 @@ const idGroup = (hi, lo) => {
 async function readside(id, signal) {
   const url = `https://api.encar.com/v1/readside/vehicle/${id}`;
   const enc = encodeURIComponent(url);
-  const one = async (u, headers) => {
-    const r = await fetch(u, { signal, headers });
+  const one = async (u, headers, fetchImpl = fetch) => {
+    const r = await fetchImpl(u, { signal, headers });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const j = await r.json();
     if (!j?.manage) throw new Error('no manage block');
     return j;
   };
-  const j = await Promise.any([
+  const j = await withProxyFallback(Promise.any([
     one(url, BROWSER_HEADERS),
     one(`${DENO_RELAY}?url=${enc}`, DENO_RELAY_HEADERS),
     ...(LOCAL_RELAY ? [one(`${LOCAL_RELAY}?url=${enc}`, LOCAL_RELAY_HEADERS)] : []),
-  ]);
+  ]), () => one(url, BROWSER_HEADERS, proxyFetch));
   const at = j.manage.firstAdvertisedDateTime || j.manage.registDateTime;
   return { postedAt: at ? new Date(`${at}+09:00`).toISOString() : null, reserved: !!j.manage.webReserved };
 }
@@ -692,7 +693,9 @@ async function rawSearch(parts, offset, count, signal, sortKey = 'ModifiedDate')
   const encarUrl = buildEncarUrl(parts, offset, count, sortKey);
   const enc = encodeURIComponent(encarUrl);
 
-  return Promise.any([
+  // The residential proxy (encarProxy.js) joins only if these all fail or
+  // stay silent for 2.5s.
+  return withProxyFallback(Promise.any([
     attempt(encarUrl,                                          false, signal, 'direct',    BROWSER_HEADERS),
     attempt(`https://api.allorigins.win/get?url=${enc}`,       true,  signal, 'allorigins', {}),
     attempt(`https://api.codetabs.com/v1/proxy?quest=${enc}`,  false, signal, 'codetabs',   {}),
@@ -709,7 +712,7 @@ async function rawSearch(parts, offset, count, signal, sortKey = 'ModifiedDate')
     ...(LOCAL_RELAY
       ? [attempt(`${LOCAL_RELAY}?url=${enc}`,                  false, signal, 'localrelay', LOCAL_RELAY_HEADERS)]
       : []),
-  ]);
+  ]), () => attempt(encarUrl, false, signal, 'proxy', BROWSER_HEADERS, proxyFetch));
 }
 
 // Last-resort fallback for free text that doesn't map onto an exact Encar

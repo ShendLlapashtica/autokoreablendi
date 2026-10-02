@@ -5,6 +5,7 @@ import { noisyFields, majorityMerge } from '../src/lib/encarClean.js';
 import { trackPrices } from '../src/lib/priceTrack.js';
 import { ENCAR_OPTIONS } from '../src/lib/encarOptions.js';
 import { OPTION_NAMES_DE_EN } from '../src/lib/encarOptionNames.js';
+import { proxyFetch, withProxyFallback, proxyConfigured } from '../src/lib/encarProxy.js';
 const BROWSER_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   'Accept': 'application/json, text/javascript, */*; q=0.01',
@@ -38,18 +39,17 @@ async function optionCatalogue(signal) {
   return optionNames ?? bundled;
 }
 
-// Inspection and insurance record: direct or via the relay, capped at 2.5s
-// so they never hold the response up. The relay must allow these paths
-// (/v1/readside/inspection/, /v1/readside/record/); until it does they are
-// simply absent from the response. The public proxies were tried and never
-// delivered the record, while costing ~6s.
+// Inspection and insurance record: direct, via the relay (which must allow
+// /v1/readside/inspection/ and /v1/readside/record/), or via the residential
+// proxy when configured -- capped so they never hold the response up. The
+// public proxies were tried and never delivered the record.
 async function readsideJson(path, signal) {
   const url = `https://api.encar.com/v1/readside/${path}`;
-  const capped = AbortSignal.any([signal, AbortSignal.timeout(2500)]);
-  return Promise.any([
+  const capped = AbortSignal.any([signal, AbortSignal.timeout(proxyConfigured ? 4500 : 2500)]);
+  return withProxyFallback(Promise.any([
     tryFetch(url, capped),
     tryFetch(`${DENO_RELAY}?url=${encodeURIComponent(url)}`, capped, false, DENO_RELAY_HEADERS),
-  ]);
+  ]), () => tryFetch(url, capped, false, BROWSER_HEADERS, proxyFetch));
 }
 
 /**
@@ -113,8 +113,8 @@ async function addDetails(data, full, signal) {
   }
 }
 
-async function tryFetch(url, signal, isWrapped = false, extraHeaders = null) {
-  const r = await fetch(url, { signal, headers: extraHeaders ?? (isWrapped ? {} : BROWSER_HEADERS) });
+async function tryFetch(url, signal, isWrapped = false, extraHeaders = null, fetchImpl = fetch) {
+  const r = await fetchImpl(url, { signal, headers: extraHeaders ?? (isWrapped ? {} : BROWSER_HEADERS) });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   const text = await r.text();
   if (isWrapped) {
@@ -156,7 +156,7 @@ export default async function handler(req, res) {
   const enc2 = encodeURIComponent(listUrl);
 
   try {
-    const data = await Promise.any([
+    const data = await withProxyFallback(Promise.any([
       // View endpoint — direct + proxied
       tryFetch(viewUrl, ctrl.signal),
       tryFetch(`https://api.allorigins.win/get?url=${enc1}`, ctrl.signal, true),
@@ -180,7 +180,11 @@ export default async function handler(req, res) {
         if (!car) throw new Error('not found in list via denorelay');
         return car;
       }),
-    ]);
+    ]), () => tryFetch(listUrl, ctrl.signal, false, BROWSER_HEADERS, proxyFetch).then(d => {
+      const car = d?.SearchResults?.[0];
+      if (!car) throw new Error('not found in list via proxy');
+      return car;
+    }));
 
     // Live-only key: Encar sometimes injects random characters into text
     // fields (see encarClean.js). A noisy record is fetched again; if it stays
@@ -205,10 +209,10 @@ export default async function handler(req, res) {
     // a separate, less reliable endpoint) must never break the response.
     try {
       const readsideUrl = `https://api.encar.com/v1/readside/vehicle/${id}`;
-      const full = await Promise.any([
+      const full = await withProxyFallback(Promise.any([
         tryFetch(readsideUrl, ctrl.signal),
         tryFetch(`${DENO_RELAY}?url=${encodeURIComponent(readsideUrl)}`, ctrl.signal, false, DENO_RELAY_HEADERS),
-      ]);
+      ]), () => tryFetch(readsideUrl, ctrl.signal, false, BROWSER_HEADERS, proxyFetch));
       // Live-only: when the car was first advertised and whether Encar shows
       // it as reserved (manage block; posting time is Korean local time).
       if (req.liveOnly && full?.manage) {
