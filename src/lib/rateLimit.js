@@ -77,7 +77,9 @@ function loadKeys() {
 function loadPaidKeys() {
   const keys = new Map(); // key value -> { label, domain, rpm, maxCount }
   for (const entry of (process.env.PAID_API_KEYS || '').split(',')) {
-    const [label, value, domain, rpmStr, maxCountStr] = entry.split(':').map(s => s?.trim());
+    // Optional 6th field "live": the key gets the live-only treatment of
+    // trial keys (never cached, exact model filter, Encar noise removed).
+    const [label, value, domain, rpmStr, maxCountStr, mode] = entry.split(':').map(s => s?.trim());
     if (label && value && domain) {
       const rpm      = rpmStr      ? parseInt(rpmStr, 10)      : null;
       const maxCount = maxCountStr ? parseInt(maxCountStr, 10) : null;
@@ -86,6 +88,7 @@ function loadPaidKeys() {
         domain: domain.toLowerCase(),
         rpm:      Number.isFinite(rpm)      ? rpm      : null,
         maxCount: Number.isFinite(maxCount) ? maxCount : null,
+        liveOnly: mode === 'live',
       });
     }
   }
@@ -197,7 +200,7 @@ export async function checkApiKey(req, res) {
   // Paid keys are checked first and handled entirely separately — origin
   // enforcement, quota bucket, and response headers never touch the
   // free-tier path below, so paid-tier volume can't degrade it.
-  for (const [validKey, { label, domain, rpm, maxCount }] of loadPaidKeys()) {
+  for (const [validKey, { label, domain, rpm, maxCount, liveOnly }] of loadPaidKeys()) {
     if (!safeEqual(key, validKey)) continue;
 
     // Checked before the origin rule below so a suspended key fails fast and
@@ -239,6 +242,7 @@ export async function checkApiKey(req, res) {
     // Read by api/cars.js to clamp the `count` query param below the
     // site-wide 500 default — only set when this key has its own override.
     if (maxCount != null) req.paidMaxCount = maxCount;
+    if (liveOnly) req.liveOnly = true;
     return true;
   }
 
