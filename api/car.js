@@ -2,6 +2,7 @@
 import { checkApiKey } from '../src/lib/rateLimit.js';
 import { withPower } from '../src/lib/power.js';
 import { noisyFields, majorityMerge } from '../src/lib/encarClean.js';
+import { trackPrices } from '../src/lib/priceTrack.js';
 const BROWSER_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   'Accept': 'application/json, text/javascript, */*; q=0.01',
@@ -109,6 +110,13 @@ export default async function handler(req, res) {
         tryFetch(readsideUrl, ctrl.signal),
         tryFetch(`${DENO_RELAY}?url=${encodeURIComponent(readsideUrl)}`, ctrl.signal, false, DENO_RELAY_HEADERS),
       ]);
+      // Live-only: when the car was first advertised and whether Encar shows
+      // it as reserved (manage block; posting time is Korean local time).
+      if (req.liveOnly && full?.manage) {
+        const at = full.manage.firstAdvertisedDateTime || full.manage.registDateTime;
+        if (at) data.postedAt = new Date(`${at}+09:00`).toISOString();
+        data.reserved = !!full.manage.webReserved;
+      }
       if (Array.isArray(full?.photos) && full.photos.length > 0) {
         data.Photos = full.photos
           .slice()
@@ -125,7 +133,8 @@ export default async function handler(req, res) {
       res.setHeader('Cache-Control', 'no-store');
       res.setHeader('X-Data-Live', 'true');
       res.setHeader('X-Data-Fetched-At', fetchedAt);
-      return res.status(200).json({ ...withPower(data), live: true, fetchedAt });
+      const [tracked] = await trackPrices([data]);
+      return res.status(200).json({ ...withPower(tracked), live: true, fetchedAt });
     }
     return res.status(200).json(withPower(data));
   } catch (err) {

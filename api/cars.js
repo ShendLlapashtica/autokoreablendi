@@ -5,6 +5,7 @@ import dns from 'node:dns';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { noisyRows, majorityMerge } from '../src/lib/encarClean.js';
 import { modelGroupsFrom, modelsFrom, matchGroup, matchModel } from '../src/lib/modelResolve.js';
+import { trackPrices, recentDropIds } from '../src/lib/priceTrack.js';
 // Encar's egress failure on Vercel is a 17ms "fetch failed" -- far too fast
 // for a round trip to Korea and far too fast for a WAF page, which would be
 // an HTTP response, not a dead socket. That signature is what a dual-stack
@@ -448,11 +449,14 @@ export function buildEncarUrl(parts, offset, count, sortKey = 'ModifiedDate') {
   // For plain terms this produces exactly the string it always did.
   const terms  = allParts.map(p => (p.startsWith('(') ? p : `${p}.`));
   const filter = `(And.Hidden.N._.${terms.join('_.')})`;
+  // Id-list queries (the newest/price-drop feeds) never read the facet tree,
+  // which is ~165 KB per response; everything else keeps it as before.
+  const byIds = allParts.some(p => p.startsWith('(Or.CarId.'));
   return `https://api.encar.com/search/car/list/general?${new URLSearchParams({
     count: 'true',
     q:     filter,
     sr:    `|${sortKey}|${offset}|${count}`,
-    inav:  '|Metadata|Sort',
+    ...(byIds ? {} : { inav: '|Metadata|Sort' }),
   })}`;
 }
 
@@ -531,6 +535,123 @@ async function resolveModel(make, text, signal) {
     parts.push(`Model.${generation}`);
   }
   return { make: found.make, parts, modelGroup: found.hit.group.value, model: generation };
+}
+
+// ── Feeds for live-only keys: newest listings and price drops ──────────────
+//
+// Newest: Encar has no "newest first" sort (its own site offers only
+// recently-updated, price, mileage and year), and a search returns at most
+// ~10,000 distinct rows -- deeper pages repeat (verified 2026-10-02: page
+// 30,000 == page 12,000). What Encar does have is sequential car ids: a
+// higher id was registered later (checked against firstAdvertisedDateTime).
+// So the newest listings are read by id, newest first, 200 ids per query
+// (Encar refuses longer URLs with 414), filters applied in the same query.
+
+const ID_CHUNK = 200;
+const idGroup = (hi, lo) => {
+  const ids = [];
+  for (let i = hi; i >= lo; i--) ids.push(`CarId.${i}.`);
+  return `(Or.${ids.join('_.')})`;
+};
+
+// Encar's readside record: when the car was first advertised and whether it
+// is reserved. firstAdvertisedDateTime is Korean local time.
+async function readside(id, signal) {
+  const url = `https://api.encar.com/v1/readside/vehicle/${id}`;
+  const enc = encodeURIComponent(url);
+  const one = async (u, headers) => {
+    const r = await fetch(u, { signal, headers });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    if (!j?.manage) throw new Error('no manage block');
+    return j;
+  };
+  const j = await Promise.any([
+    one(url, BROWSER_HEADERS),
+    one(`${DENO_RELAY}?url=${enc}`, DENO_RELAY_HEADERS),
+    ...(LOCAL_RELAY ? [one(`${LOCAL_RELAY}?url=${enc}`, LOCAL_RELAY_HEADERS)] : []),
+  ]);
+  const at = j.manage.firstAdvertisedDateTime || j.manage.registDateTime;
+  return { postedAt: at ? new Date(`${at}+09:00`).toISOString() : null, reserved: !!j.manage.webReserved };
+}
+
+// The highest id currently listed on Encar: the top of the recently-updated
+// list, then probed upward 200 ids at a time until nothing more exists.
+async function topListedId(signal) {
+  const first = await runSearch([], 0, 500, signal);
+  let top = Math.max(...first.SearchResults.map(c => c.Id));
+  // Probe 1,000 ids above at once (5 queries in parallel); repeat while the
+  // highest block still had cars in it.
+  for (let k = 0; k < 4; k++) {
+    const blocks = await Promise.all([0, 1, 2, 3, 4].map(b =>
+      runSearch([idGroup(top + (b + 1) * ID_CHUNK, top + b * ID_CHUNK + 1)], 0, ID_CHUNK, signal).catch(() => null)));
+    const ids = blocks.flatMap(d => d?.SearchResults?.map(c => c.Id) ?? []);
+    if (!ids.length) break;
+    top = Math.max(top, ...ids);
+    if (!blocks[4]?.SearchResults?.length) break;
+  }
+  return top;
+}
+
+/**
+ * Newest listings matching `parts`, newest first. Either everything above
+ * `sinceId` (an incremental feed: pass back the previous response's
+ * latestId), or everything first advertised within the last `hours`.
+ */
+async function newestFeed(parts, { sinceId, hours }, offset, count, signal) {
+  const top = await topListedId(signal);
+  const MAX_IDS = 4000;                  // ~8h of Encar registrations
+  const floor = sinceId ? Math.max(sinceId + 1, top - MAX_IDS) : top - MAX_IDS;
+  const cutoff = hours ? Date.now() - hours * 3600e3 : null;
+  const rows = [];
+  let hi = top, reachedCutoff = false;
+  while (hi >= floor && !reachedCutoff) {
+    const round = [];
+    for (let i = 0; i < 16 && hi >= floor; i++, hi -= ID_CHUNK) {
+      round.push(runSearch([...parts, idGroup(hi, Math.max(floor, hi - ID_CHUNK + 1))], 0, ID_CHUNK, signal));
+    }
+    const found = (await Promise.all(round)).flatMap(d => d.SearchResults);
+    rows.push(...found);
+    if (cutoff && found.length) {
+      const lowest = found.reduce((a, b) => (a.Id < b.Id ? a : b));
+      const t = Date.parse((await readside(lowest.Id, signal)).postedAt);
+      if (t < cutoff) reachedCutoff = true;
+    }
+  }
+  const seen = new Set();
+  let list = rows.filter(c => !seen.has(c.Id) && seen.add(c.Id)).sort((a, b) => b.Id - a.Id);
+  if (cutoff && reachedCutoff) {
+    // Exact boundary: binary search the posting time over the sorted ids.
+    let lo = 0, hiIx = list.length - 1, keep = list.length;
+    while (lo <= hiIx) {
+      const mid = (lo + hiIx) >> 1;
+      const t = Date.parse((await readside(list[mid].Id, signal)).postedAt);
+      if (t >= cutoff) lo = mid + 1; else { keep = mid; hiIx = mid - 1; }
+    }
+    list = list.slice(0, keep);
+  }
+  return { Count: list.length, SearchResults: list.slice(offset, offset + count), latestId: top };
+}
+
+/**
+ * Cars whose price dropped within the last `days`, re-read live and still
+ * at or below the reduced price, most recent drop first. Each call also
+ * sweeps Encar's recently-updated listings, which is where a price change
+ * shows up, so new drops are caught as they happen.
+ */
+async function priceDropFeed(parts, days, offset, count, signal) {
+  // Swept with the caller's own filters, so it watches the cars they asked about.
+  const sweep = await Promise.all([0, 500, 1000, 1500].map(o => runSearch(parts, o, 500, signal).catch(() => null)));
+  await trackPrices(sweep.filter(Boolean).flatMap(d => d.SearchResults));
+  const ids = await recentDropIds(Date.now() - days * 86400e3);
+  if (ids === null) throw new Error('price tracking unavailable');
+  const chunks = [];
+  for (let i = 0; i < ids.length; i += ID_CHUNK) chunks.push(ids.slice(i, i + ID_CHUNK));
+  const found = (await Promise.all(chunks.map(ch =>
+    runSearch([...parts, `(Or.${ch.map(i => `CarId.${i}.`).join('_.')})`], 0, ID_CHUNK, signal)))).flatMap(d => d.SearchResults);
+  const annotated = (await trackPrices(found)).filter(c => c.priceDrop);
+  annotated.sort((a, b) => Date.parse(b.priceDrop.droppedAt) - Date.parse(a.priceDrop.droppedAt));
+  return { Count: annotated.length, SearchResults: annotated.slice(offset, offset + count), tracked: true };
 }
 
 async function rawSearch(parts, offset, count, signal, sortKey = 'ModifiedDate') {
@@ -887,6 +1008,17 @@ export default async function handler(req, res) {
     });
   }
   const bodyRequested = bodies.cats.length + bodies.texts.length > 0;
+
+  // Feeds, live-only keys: sort=newest (postedWithin=<hours> | newSince=<id>)
+  // and priceDropped=1 (droppedWithin=<days>). See newestFeed/priceDropFeed.
+  const feedMode = !req.liveOnly ? null
+    : (q.priceDropped === '1' || q.priceDropped === 'true') ? 'priceDropped'
+    : (q.sort === 'newest' || q.newSince) ? 'newest' : null;
+  const newSince      = parseInt(q.newSince, 10) || null;
+  // Capped at 6 hours: one parallel round of id blocks. For anything polled
+  // regularly, newSince (the previous response's latestId) costs 1-3 queries.
+  const postedWithin  = newSince ? null : Math.min(6, Math.max(0.25, parseFloat(q.postedWithin) || 6));
+  const droppedWithin = Math.min(30, Math.max(1, parseFloat(q.droppedWithin) || 7));
   const bodyScanMode  = bodies.texts.length > 0;
   if (bodies.cats.length && !bodyScanMode) commonParts.push(categoryPart(bodies.cats));
   // The body each returned car is listed as: its own coupé/cabrio/wagon text
@@ -934,7 +1066,8 @@ export default async function handler(req, res) {
   const ctrl  = new AbortController();
   // A live-only key has no cache to fall back on, so it gets most of the
   // function's 10s budget to reach Encar instead of the visitor's 3s.
-  const timer = setTimeout(() => ctrl.abort(), req.liveOnly ? 8000 : 3000);
+  // The newest/price-drop feeds read many id blocks, so they get longer still.
+  const timer = setTimeout(() => ctrl.abort(), feedMode ? 25000 : req.liveOnly ? 8000 : 3000);
 
   try {
     // Plain unfiltered homepage browsing — no brand/model/keyword narrowing
@@ -947,7 +1080,14 @@ export default async function handler(req, res) {
     // plain chronological order, untouched.
     const isPlainBrowse = sortKey === 'ModifiedDate' && identityParts.length === 0 && !rawKeyword;
     let data;
-    if (bodyScanMode) {
+    if (feedMode) {
+      // Coupé/Cabrio/Wagon are trim-text matches, applied to the feed's rows.
+      const keepBody = (r) => (bodies.texts.length
+        ? { ...r, SearchResults: r.SearchResults.filter(c => textBody(c, bodies.texts)) } : r);
+      data = keepBody(feedMode === 'newest'
+        ? await newestFeed([...identityParts, ...commonParts], { sinceId: newSince, hours: postedWithin }, offset, count, ctrl.signal)
+        : await priceDropFeed([...identityParts, ...commonParts], droppedWithin, offset, count, ctrl.signal));
+    } else if (bodyScanMode) {
       data = await bodyScan([...identityParts, ...commonParts], bodies.texts, bodies.cats, offset, count, ctrl.signal, sortKey);
     } else if (isPlainBrowse && offset === 0) {
       const pool = await runSearch(commonParts, 0, FEATURED_POOL_SIZE, ctrl.signal, sortKey);
@@ -966,7 +1106,7 @@ export default async function handler(req, res) {
     // A non-exact model was left out of the facet filter above — narrow the
     // (brand-wide) results down by substring-matching it now, rather than
     // waiting for a hard zero-result before trying.
-    if (!bodyScanMode && model && !modelExact) {
+    if (!feedMode && !bodyScanMode && model && !modelExact) {
       const narrowed = await substringSearch(remainder, manufacturer, offset, count, ctrl.signal, commonParts, sortKey);
       if (narrowed.SearchResults.length > 0) data = narrowed;
     }
@@ -983,7 +1123,7 @@ export default async function handler(req, res) {
     // Never for a coupé/cabrio/wagon search: broadening would hand back cars
     // of some other body as if they matched.
     // Nor for a resolved model: zero of that model is the answer, not the make.
-    if (!bodyScanMode && !liveModel && data.SearchResults.length === 0 && (manufacturer || model)) {
+    if (!feedMode && !bodyScanMode && !liveModel && data.SearchResults.length === 0 && (manufacturer || model)) {
       if (manufacturer && remainder) {
         data = await substringSearch(remainder, manufacturer, offset, count, ctrl.signal, commonParts, sortKey);
       }
@@ -1002,14 +1142,17 @@ export default async function handler(req, res) {
 
     // Only re-rank the default (newest-first) browse — an explicit price
     // sort from the user is a stronger, deliberate signal and must win.
-    const results = sortKey === 'ModifiedDate'
+    const results = !feedMode && sortKey === 'ModifiedDate'
       ? data.SearchResults.map((car, i) => ({ car, i, s: qualityScore(car) }))
           .sort((a, b) => b.s - a.s || a.i - b.i)
           .map(x => x.car)
       : data.SearchResults;
 
     // Best-effort — never let a cache-write failure affect the live response.
-    if (results.length > 0) await cacheSet(cacheKey, { total: data.Count, results });
+    if (results.length > 0 && !req.liveOnly) await cacheSet(cacheKey, { total: data.Count, results });
+    // Live-only: every price seen is recorded, so a later lower price is a
+    // detected drop; rows with a known drop carry priceDrop.
+    const finalRows = req.liveOnly ? await trackPrices(results) : results;
 
     const fetchedAt = new Date().toISOString();
     if (req.liveOnly) {
@@ -1023,7 +1166,9 @@ export default async function handler(req, res) {
       ...(data.approx ? { totalApprox: true } : {}),
       page,
       count:   results.length,
-      results: results.map(c => ({ ...withPower(c), bodyType: bodyOf(c) })),
+      results: finalRows.map(c => ({ ...withPower(c), bodyType: bodyOf(c) })),
+      ...(feedMode === 'newest' ? { latestId: data.latestId, ...(postedWithin ? { postedWithin } : { newSince }) } : {}),
+      ...(feedMode === 'priceDropped' ? { droppedWithin } : {}),
       ...(req.liveOnly ? { live: true, fetchedAt } : {}),
       ...(liveModel ? { modelMatched: true, resolved: { manufacturer: liveModel.make, modelGroup: liveModel.modelGroup, model: liveModel.model } } : {}),
     });
