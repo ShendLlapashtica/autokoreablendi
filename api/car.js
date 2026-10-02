@@ -121,7 +121,8 @@ export default async function handler(req, res) {
   // See api/cars.js — a blocked `direct` attempt hangs instead of failing
   // fast, so this is the real latency ceiling per request, kept short.
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 3000);
+  // A live-only key also gets the history and inspection records, so more time.
+  const timer = setTimeout(() => ctrl.abort(), req.liveOnly ? 8000 : 3000);
 
   // Strategy 1: Encar dedicated view endpoint
   const viewUrl = `https://api.encar.com/search/car/view/general?carid=${id}`;
