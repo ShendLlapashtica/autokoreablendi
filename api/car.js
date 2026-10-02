@@ -15,6 +15,86 @@ const BROWSER_HEADERS = {
 const DENO_RELAY = 'https://autokoreablendi-encar-relay.shendllapashtica.deno.net/';
 const DENO_RELAY_HEADERS = { 'x-relay-secret': process.env.DENO_RELAY_SECRET || '' };
 
+// Encar's option catalogue (code -> Korean name), read once per instance.
+let optionNames = null;
+async function optionCatalogue(signal) {
+  if (optionNames) return optionNames;
+  const url = 'https://api.encar.com/v1/readside/vehicles/car/options/standard';
+  const cat = await Promise.any([
+    tryFetch(url, signal),
+    tryFetch(`${DENO_RELAY}?url=${encodeURIComponent(url)}`, signal, false, DENO_RELAY_HEADERS),
+  ]);
+  const map = new Map();
+  const walk = (list) => (list || []).forEach(o => {
+    if (o?.optionCd) map.set(o.optionCd, o.optionName);
+    walk(o?.subOptions);
+  });
+  walk(cat?.options);
+  if (map.size) optionNames = map;
+  return map;
+}
+
+async function readsideJson(path, signal) {
+  const url = `https://api.encar.com/v1/readside/${path}`;
+  return Promise.any([
+    tryFetch(url, signal),
+    tryFetch(`${DENO_RELAY}?url=${encodeURIComponent(url)}`, signal, false, DENO_RELAY_HEADERS),
+  ]);
+}
+
+/**
+ * Adds, from Encar's own records:
+ *   details    colour, transmission, fuel, displacement, seats, body
+ *   options    [{ code, name }] fitted options (Encar's catalogue names)
+ *   history    insurance record: accidents and their cost, owner changes,
+ *              total loss, flood, theft, rental/commercial use
+ *   inspection performance-inspection verdict: accident, simple repair
+ * Each part is best-effort; a missing record leaves only that part out.
+ */
+async function addDetails(data, full, signal) {
+  const spec = full?.spec || {};
+  data.details = {
+    color: spec.colorName ?? null,
+    transmission: spec.transmissionName ?? null,
+    fuel: spec.fuelName ?? null,
+    displacement: spec.displacement ?? null,
+    seats: spec.seatCount ?? null,
+    body: spec.bodyName ?? null,
+  };
+  const vid = full?.vehicleId, vno = full?.vehicleNo;
+  const [names, record, insp] = await Promise.all([
+    optionCatalogue(signal).catch(() => new Map()),
+    vid && vno ? readsideJson(`record/vehicle/${vid}/open?vehicleNo=${encodeURIComponent(vno)}`, signal).catch(() => null) : null,
+    vid ? readsideJson(`inspection/vehicle/${vid}`, signal).catch(() => null) : null,
+  ]);
+  const codes = [...new Set([...(full?.options?.standard || []), ...(full?.options?.choice || [])])];
+  data.options = codes.map(code => ({ code, name: names.get(code) ?? null }));
+  if (record && typeof record === 'object' && 'myAccidentCnt' in record) {
+    data.history = {
+      ownAccidents: record.myAccidentCnt ?? 0,
+      ownAccidentCost: record.myAccidentCost ?? 0,
+      otherAccidents: record.otherAccidentCnt ?? 0,
+      otherAccidentCost: record.otherAccidentCost ?? 0,
+      ownerChanges: record.ownerChangeCnt ?? 0,
+      plateChanges: record.carNoChangeCnt ?? 0,
+      totalLoss: record.totalLossCnt ?? 0,
+      floodTotalLoss: record.floodTotalLossCnt ?? 0,
+      floodPartialLoss: record.floodPartLossCnt ?? 0,
+      theft: record.robberCnt ?? 0,
+      usedAsRental: !!record.loan,
+      usedCommercially: !!record.business,
+      usedByGovernment: !!record.government,
+      firstRegistration: record.firstDate ?? null,
+    };
+  }
+  if (insp?.master) {
+    data.inspection = {
+      accident: !!(insp.master.accdient ?? insp.master.accident),
+      simpleRepair: !!insp.master.simpleRepair,
+    };
+  }
+}
+
 async function tryFetch(url, signal, isWrapped = false, extraHeaders = null) {
   const r = await fetch(url, { signal, headers: extraHeaders ?? (isWrapped ? {} : BROWSER_HEADERS) });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -117,6 +197,9 @@ export default async function handler(req, res) {
         if (at) data.postedAt = new Date(`${at}+09:00`).toISOString();
         data.reserved = !!full.manage.webReserved;
       }
+      // Live-only: the details search rows do not carry -- colour, gearbox,
+      // options -- plus Encar's insurance-history and inspection records.
+      if (req.liveOnly) await addDetails(data, full, ctrl.signal).catch(() => {});
       if (Array.isArray(full?.photos) && full.photos.length > 0) {
         data.Photos = full.photos
           .slice()

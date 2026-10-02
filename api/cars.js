@@ -4,7 +4,7 @@ import { checkApiKey } from '../src/lib/rateLimit.js';
 import dns from 'node:dns';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { noisyRows, majorityMerge } from '../src/lib/encarClean.js';
-import { modelGroupsFrom, modelsFrom, matchGroup, matchModel } from '../src/lib/modelResolve.js';
+import { modelGroupsFrom, modelsFrom, manufacturersFrom, matchGroup, matchModel } from '../src/lib/modelResolve.js';
 import { trackPrices, recentDropIds, seedFromCache, nextSeedIds, seedRemaining } from '../src/lib/priceTrack.js';
 // Encar's egress failure on Vercel is a 17ms "fetch failed" -- far too fast
 // for a round trip to Korea and far too fast for a WAF page, which would be
@@ -663,6 +663,31 @@ async function priceDropFeed(parts, days, offset, count, signal) {
   return { Count: annotated.length, SearchResults: annotated.slice(offset, offset + count), tracked: true };
 }
 
+/**
+ * Listing counts from Encar's facet tree, for the caller's filters:
+ * per make when no make is given, per model for a make, per generation for
+ * a model. One Encar query (two for a make: domestic and import trees).
+ */
+async function facetCounts(make, liveModel, commonParts, signal) {
+  if (liveModel?.modelGroup) {
+    const d = await rawSearch([...commonParts, `(C.Manufacturer.${liveModel.make}._.ModelGroup.${liveModel.modelGroup}.)`], 0, 1, signal);
+    return { total: d.Count, manufacturer: liveModel.make, modelGroup: liveModel.modelGroup,
+      generations: modelsFrom(d.iNav, true).filter(m => m.count > 0).map(m => ({ model: m.value, count: m.count })).sort((a, b) => b.count - a.count) };
+  }
+  if (make) {
+    const trees = await Promise.all(['Y', 'N'].map(t =>
+      rawSearch([...commonParts, `(C.CarType.${t}._.Manufacturer.${make}.)`], 0, 1, signal).catch(() => null)));
+    const models = trees.flatMap(d => modelGroupsFrom(d?.iNav, true)).filter(m => m.count > 0);
+    return { total: trees.reduce((n, d) => n + (d?.Count || 0), 0), manufacturer: make,
+      models: models.map(m => ({ model: m.value, modelEn: m.eng, count: m.count })).sort((a, b) => b.count - a.count) };
+  }
+  // Encar lists makes only inside the domestic (Y) and import (N) trees.
+  const trees = await Promise.all(['Y', 'N'].map(t =>
+    rawSearch([...commonParts, `CarType.${t}`], 0, 1, signal).catch(() => null)));
+  return { total: trees.reduce((n, d) => n + (d?.Count || 0), 0),
+    manufacturers: trees.flatMap(d => manufacturersFrom(d?.iNav)).filter(m => m.count > 0).sort((a, b) => b.count - a.count) };
+}
+
 async function rawSearch(parts, offset, count, signal, sortKey = 'ModifiedDate') {
   const encarUrl = buildEncarUrl(parts, offset, count, sortKey);
   const enc = encodeURIComponent(encarUrl);
@@ -960,14 +985,25 @@ export default async function handler(req, res) {
     }
   }
 
-  const sortKey =q.sort === 'priceAsc' ? 'PriceAsc' : q.sort === 'priceDesc' ? 'PriceDesc' : 'ModifiedDate';
+  // Encar's own sort keys (verified 2026-10-02). It has model year newest
+  // first, but no oldest-first.
+  const SORTS = { priceAsc: 'PriceAsc', priceDesc: 'PriceDesc', yearDesc: 'Year', mileageAsc: 'MileageAsc', mileageDesc: 'MileageDesc' };
+  const sortKey = SORTS[q.sort] ?? 'ModifiedDate';
 
   // Filters shared by every attempt (fuel/year/mileage/price/transmission/color)
   const commonParts = [];
 
+  // Encar files hybrids and LPG under combined values ("가솔린+전기",
+  // "LPG(일반인 구입)"), so for live-only keys those words cover all of them.
+  const LIVE_FUELS = {
+    hybrid: ['가솔린+전기', '디젤+전기', 'LPG+전기'],
+    lpg:    ['LPG(일반인 구입)', 'LPG+전기', '가솔린+LPG', 'LPG+가솔린'],
+  };
   if (q.fuel) {
-    const mapped = FUEL_MAP[q.fuel.toLowerCase().trim()] ?? q.fuel;
-    commonParts.push(`FuelType.${mapped}`);
+    const key = q.fuel.toLowerCase().trim();
+    const group = req.liveOnly ? LIVE_FUELS[key] : null;
+    if (group) commonParts.push(`(Or.${group.map(v => `FuelType.${v}.`).join('_.')})`);
+    else commonParts.push(`FuelType.${FUEL_MAP[key] ?? q.fuel}`);
   }
 
   if (q.transmission) {
@@ -1087,8 +1123,17 @@ export default async function handler(req, res) {
     // very first page are curated this way — everything after that
     // (including the rest of this same page, and every later page) is
     // plain chronological order, untouched.
-    const isPlainBrowse = sortKey === 'ModifiedDate' && identityParts.length === 0 && !rawKeyword;
+    const isPlainBrowse = !req.liveOnly && sortKey === 'ModifiedDate' && identityParts.length === 0 && !rawKeyword;
     let data;
+    if (req.liveOnly && (q.facets === '1' || q.facets === 'true')) {
+      clearTimeout(timer);
+      const fetchedAt = new Date().toISOString();
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('X-Data-Live', 'true');
+      res.setHeader('X-Data-Fetched-At', fetchedAt);
+      return res.status(200).json({ live: true, fetchedAt,
+        ...(await facetCounts(manufacturer, liveModel, commonParts, ctrl.signal)) });
+    }
     if (feedMode) {
       // Coupé/Cabrio/Wagon are trim-text matches, applied to the feed's rows.
       const keepBody = (r) => (bodies.texts.length
@@ -1151,7 +1196,7 @@ export default async function handler(req, res) {
 
     // Only re-rank the default (newest-first) browse — an explicit price
     // sort from the user is a stronger, deliberate signal and must win.
-    const results = !feedMode && sortKey === 'ModifiedDate'
+    const results = !feedMode && !req.liveOnly && sortKey === 'ModifiedDate'
       ? data.SearchResults.map((car, i) => ({ car, i, s: qualityScore(car) }))
           .sort((a, b) => b.s - a.s || a.i - b.i)
           .map(x => x.car)

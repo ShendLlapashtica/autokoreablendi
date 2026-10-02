@@ -26,7 +26,7 @@ function facetValues(iNav, field) {
       const tally = new Map();
       for (const v of copies) tally.set(v, (tally.get(v) || 0) + 1);
       const [value, votes] = [...tally.entries()].sort((a, b) => b[1] - a[1])[0];
-      if (votes >= 2) out.push({ value, eng: n.Metadata?.EngName?.[0] ?? '' });
+      if (votes >= 2) out.push({ value, eng: n.Metadata?.EngName?.[0] ?? '', count: Number(n.Count) || 0 });
     }
     for (const k of Object.keys(n)) if (k !== 'Metadata') walk(n[k]);
   };
@@ -34,16 +34,28 @@ function facetValues(iNav, field) {
   return out;
 }
 
-/** [{ value, eng }] for each ModelGroup in an Encar facet tree (iNav). */
+/** [{ value, eng, count }] for each ModelGroup in an Encar facet tree (iNav). */
 export function modelGroupsFrom(iNav) {
   const out = new Map();
   for (const g of facetValues(iNav, 'ModelGroup')) out.set(g.value, g);
   return [...out.values()];
 }
 
-/** Model (generation) values in an Encar facet tree. */
-export function modelsFrom(iNav) {
-  return [...new Set(facetValues(iNav, 'Model').map(m => m.value))];
+/**
+ * Model (generation) values in an Encar facet tree: names, or with
+ * withCount the { value, count } objects.
+ */
+export function modelsFrom(iNav, withCount = false) {
+  const out = new Map();
+  for (const m of facetValues(iNav, 'Model')) out.set(m.value, m);
+  return withCount ? [...out.values()].map(({ value, count }) => ({ value, count })) : [...out.keys()];
+}
+
+/** [{ manufacturer, manufacturerEn, count }] from an Encar facet tree. */
+export function manufacturersFrom(iNav) {
+  const out = new Map();
+  for (const m of facetValues(iNav, 'Manufacturer')) out.set(m.value, { manufacturer: m.value, manufacturerEn: m.eng || m.value, count: m.count });
+  return [...out.values()];
 }
 
 /**
