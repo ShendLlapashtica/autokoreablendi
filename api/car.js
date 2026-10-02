@@ -3,6 +3,7 @@ import { checkApiKey } from '../src/lib/rateLimit.js';
 import { withPower } from '../src/lib/power.js';
 import { noisyFields, majorityMerge } from '../src/lib/encarClean.js';
 import { trackPrices } from '../src/lib/priceTrack.js';
+import { ENCAR_OPTIONS } from '../src/lib/encarOptions.js';
 const BROWSER_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   'Accept': 'application/json, text/javascript, */*; q=0.01',
@@ -15,10 +16,12 @@ const BROWSER_HEADERS = {
 const DENO_RELAY = 'https://autokoreablendi-encar-relay.shendllapashtica.deno.net/';
 const DENO_RELAY_HEADERS = { 'x-relay-secret': process.env.DENO_RELAY_SECRET || '' };
 
-// Encar's option catalogue (code -> Korean name), read once per instance.
+// Encar's option catalogue (code -> Korean name): the bundled snapshot,
+// topped up live once per instance where a route allows it.
 let optionNames = null;
 async function optionCatalogue(signal) {
   if (optionNames) return optionNames;
+  const bundled = new Map(Object.entries(ENCAR_OPTIONS));
   const url = 'https://api.encar.com/v1/readside/vehicles/car/options/standard';
   const cat = await Promise.any([
     tryFetch(url, signal),
@@ -30,15 +33,20 @@ async function optionCatalogue(signal) {
     walk(o?.subOptions);
   });
   walk(cat?.options);
-  if (map.size) optionNames = map;
-  return map;
+  if (map.size) optionNames = new Map([...bundled, ...map]);
+  return optionNames ?? bundled;
 }
 
+// The relay forwards /v1/readside/vehicle/ only, so the inspection and
+// insurance-record paths also try the public proxies.
 async function readsideJson(path, signal) {
   const url = `https://api.encar.com/v1/readside/${path}`;
+  const enc = encodeURIComponent(url);
   return Promise.any([
     tryFetch(url, signal),
-    tryFetch(`${DENO_RELAY}?url=${encodeURIComponent(url)}`, signal, false, DENO_RELAY_HEADERS),
+    tryFetch(`${DENO_RELAY}?url=${enc}`, signal, false, DENO_RELAY_HEADERS),
+    tryFetch(`https://api.cors.lol/?url=${enc}`, signal, false, {}),
+    tryFetch(`https://api.codetabs.com/v1/proxy?quest=${enc}`, signal, false, {}),
   ]);
 }
 
@@ -63,10 +71,13 @@ async function addDetails(data, full, signal) {
   };
   const vid = full?.vehicleId, vno = full?.vehicleNo;
   const [names, record, insp] = await Promise.all([
-    optionCatalogue(signal).catch(() => new Map()),
+    optionCatalogue(signal).catch(() => new Map(Object.entries(ENCAR_OPTIONS))),
     vid && vno ? readsideJson(`record/vehicle/${vid}/open?vehicleNo=${encodeURIComponent(vno)}`, signal).catch(() => null) : null,
     vid ? readsideJson(`inspection/vehicle/${vid}`, signal).catch(() => null) : null,
   ]);
+  // Liens and seizures registered on the car (from the vehicle record itself).
+  const sz = full?.condition?.seizing;
+  if (sz) data.liens = { seizures: sz.seizingCount ?? 0, pledges: sz.pledgeCount ?? 0 };
   const codes = [...new Set([...(full?.options?.standard || []), ...(full?.options?.choice || [])])];
   data.options = codes.map(code => ({ code, name: names.get(code) ?? null }));
   if (record && typeof record === 'object' && 'myAccidentCnt' in record) {
