@@ -9,18 +9,53 @@
 //
 // Off unless ENCAR_PROXY_URL is set, e.g. http://user:pass@host:port (any
 // HTTP proxy that supports CONNECT -- what residential providers hand out).
+// ENCAR_PROXY_URL_2 optionally adds a second provider; tries alternate
+// between them, so one provider's outage or empty balance is not fatal.
 
 import { ProxyAgent, fetch as undiciFetch } from 'undici';
 
-const PROXY_URL = (process.env.ENCAR_PROXY_URL || '').trim();
-export const proxyConfigured = PROXY_URL.length > 0;
+const PROXY_URLS = [process.env.ENCAR_PROXY_URL, process.env.ENCAR_PROXY_URL_2]
+  .map(u => (u || '').trim())
+  .filter(Boolean);
+export const proxyConfigured = PROXY_URLS.length > 0;
 
-let agent = null;
+const TRIES       = 3;
+const PER_TRY_MS  = 3000;
+const agents      = new Map();
 
-/** fetch() through the residential proxy. */
-export function proxyFetch(url, init = {}) {
-  agent ??= new ProxyAgent(PROXY_URL);
-  return undiciFetch(url, { ...init, dispatcher: agent });
+/**
+ * fetch() through the residential proxy, retried.
+ *
+ * Since 2026-10-03 the proxy is the only route that reaches Encar (direct is
+ * blocked, the Deno relay is suspended), so one bad exit IP must not fail a
+ * request. A retry gets a fresh connection -- and with rotating residential
+ * proxies, a fresh IP -- and each try is capped so a hung exit cannot eat the
+ * whole deadline. 403/429/5xx are retried; other statuses are real answers.
+ */
+export async function proxyFetch(url, init = {}) {
+  let lastErr;
+  for (let i = 0; i < TRIES; i++) {
+    if (init.signal?.aborted) break;
+    const proxyUrl = PROXY_URLS[i % PROXY_URLS.length];
+    // First try reuses the pooled connection; retries open a new one.
+    let agent = agents.get(proxyUrl);
+    if (!agent || i >= PROXY_URLS.length) {
+      agent = new ProxyAgent(proxyUrl);
+      agents.set(proxyUrl, agent);
+    }
+    const signal = init.signal
+      ? AbortSignal.any([init.signal, AbortSignal.timeout(PER_TRY_MS)])
+      : AbortSignal.timeout(PER_TRY_MS);
+    try {
+      const r = await undiciFetch(url, { ...init, signal, dispatcher: agent });
+      if (r.status !== 403 && r.status !== 429 && r.status < 500) return r;
+      lastErr = new Error(`proxy HTTP ${r.status}`);
+    } catch (err) {
+      if (init.signal?.aborted) throw err;
+      lastErr = err;
+    }
+  }
+  throw lastErr ?? new Error('proxy: aborted');
 }
 
 const HEDGE_MS = 300;
