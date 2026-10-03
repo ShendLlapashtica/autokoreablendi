@@ -83,15 +83,6 @@ export default async function handler(req, res) {
   const ageMs  = cached?.ts ? Date.now() - cached.ts : null;
   const ageHrs = ageMs != null ? +(ageMs / 3600000).toFixed(1) : null;
 
-  // Browser recovery means the SITE can be fine while server egress is dead,
-  // but a server-to-server consumer (a partner's sync job) only ever sees the
-  // cache -- so these two are reported separately and never conflated.
-  const verdict = egress.reachable
-    ? 'LIVE — server reaches Encar; API consumers get fresh data'
-    : ageHrs != null && ageHrs < 24
-      ? 'DEGRADED — server cannot reach Encar; cache is recent; site live via browser recovery'
-      : 'STALE — server cannot reach Encar and the cache is old; API consumers are receiving outdated listings';
-
   // The residential proxy route (encarProxy.js), checked on its own so a
   // working fallback is visible even while the main route is fine.
   let proxy = { configured: proxyConfigured };
@@ -109,6 +100,17 @@ export default async function handler(req, res) {
     }
   }
 
+  // The proxy is a server-side route too: when it reaches Encar, API
+  // consumers get live listings even with direct egress blocked. The cache
+  // only matters when both routes fail.
+  const verdict = egress.reachable
+    ? 'LIVE — server reaches Encar; API consumers get fresh data'
+    : proxy.reachable
+      ? 'LIVE — server reaches Encar through the residential proxy; API consumers get fresh data'
+      : ageHrs != null && ageHrs < 24
+        ? 'DEGRADED — server cannot reach Encar; cache is recent; site live via browser recovery'
+        : 'STALE — server cannot reach Encar and the cache is old; API consumers are receiving outdated listings';
+
   res.status(200).json({
     verdict,
     checkedAt: new Date().toISOString(),
@@ -121,6 +123,6 @@ export default async function handler(req, res) {
       cars: cached?.results?.length ?? 0,
       total: cached?.total ?? null,
     },
-    note: 'Site visitors get live data via browser recovery even when serverEgressToEncar.reachable is false. Partners syncing server-to-server do NOT.',
+    note: 'API consumers get live data when serverEgressToEncar or residentialProxy is reachable. serverCache is only the fallback snapshot used when both fail.',
   });
 }
