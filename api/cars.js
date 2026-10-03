@@ -694,7 +694,7 @@ async function rawSearch(parts, offset, count, signal, sortKey = 'ModifiedDate')
   const enc = encodeURIComponent(encarUrl);
 
   // The residential proxy (encarProxy.js) joins only if these all fail or
-  // stay silent for 2.5s.
+  // stay silent for 300ms (HEDGE_MS).
   return withProxyFallback(Promise.any([
     attempt(encarUrl,                                          false, signal, 'direct',    BROWSER_HEADERS),
     attempt(`https://api.allorigins.win/get?url=${enc}`,       true,  signal, 'allorigins', {}),
@@ -1113,9 +1113,9 @@ export default async function handler(req, res) {
 
   const ctrl  = new AbortController();
   // A live-only key has no cache to fall back on, so it gets most of the
-  // function's 10s budget to reach Encar instead of the visitor's 3s.
+  // function's 10s budget to reach Encar instead of the visitor's 7s.
   // The newest/price-drop feeds read many id blocks, so they get longer still.
-  const timer = setTimeout(() => ctrl.abort(), feedMode ? 25000 : req.liveOnly ? 8000 : 3000);
+  const timer = setTimeout(() => ctrl.abort(), feedMode ? 25000 : req.liveOnly ? 8000 : 7000);
 
   try {
     // Plain unfiltered homepage browsing — no brand/model/keyword narrowing

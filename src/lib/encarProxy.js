@@ -23,7 +23,7 @@ export function proxyFetch(url, init = {}) {
   return undiciFetch(url, { ...init, dispatcher: agent });
 }
 
-const HEDGE_MS = 2500;
+const HEDGE_MS = 300;
 
 /**
  * Resolves with the first of `primary` (a promise) or, when that has failed
